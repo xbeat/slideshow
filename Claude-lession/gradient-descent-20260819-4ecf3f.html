@@ -1,0 +1,899 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<title>Gradient Descent: Đi Tìm Đáy Thung Lũng</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:ital,wght@0,400;0,500;0,600;0,700;0,800;1,500&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f7f4ec;
+    --bg-2: #efe9db;
+    --card: #ffffff;
+    --ink: #211d16;
+    --muted: #726b5c;
+    --border: #e3dcc9;
+    --accent: #c97a2b;
+    --accent-ink: #ffffff;
+    --path: #3f8f7c;
+    --good: #2f8f57;
+    --good-bg: #e6f3ea;
+    --warn: #b8790f;
+    --warn-bg: #faf0dc;
+    --bad: #c23b4f;
+    --bad-bg: #fbe8ea;
+    --code-bg: #211d16;
+    --code-ink: #f2ead9;
+    --shadow: 0 1px 2px rgba(33,29,22,0.04), 0 8px 24px -12px rgba(33,29,22,0.18);
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #12141a;
+      --bg-2: #191c24;
+      --card: #1b1e27;
+      --ink: #eee9dd;
+      --muted: #9a95a3;
+      --border: #2a2e3a;
+      --accent: #e8a94f;
+      --accent-ink: #1a1408;
+      --path: #57b39e;
+      --good: #57c17f;
+      --good-bg: #1b2b21;
+      --warn: #e0b04d;
+      --warn-bg: #2c2515;
+      --bad: #e2687a;
+      --bad-bg: #2e1c22;
+      --code-bg: #0d0e12;
+      --code-ink: #e9e3d3;
+      --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 12px 30px -14px rgba(0,0,0,0.6);
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #12141a;
+    --bg-2: #191c24;
+    --card: #1b1e27;
+    --ink: #eee9dd;
+    --muted: #9a95a3;
+    --border: #2a2e3a;
+    --accent: #e8a94f;
+    --accent-ink: #1a1408;
+    --path: #57b39e;
+    --good: #57c17f;
+    --good-bg: #1b2b21;
+    --warn: #e0b04d;
+    --warn-bg: #2c2515;
+    --bad: #e2687a;
+    --bad-bg: #2e1c22;
+    --code-bg: #0d0e12;
+    --code-ink: #e9e3d3;
+    --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 12px 30px -14px rgba(0,0,0,0.6);
+    color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Be Vietnam Pro", "Segoe UI", system-ui, sans-serif;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+  ::selection { background: var(--accent); color: var(--accent-ink); }
+  .wrap { max-width: 920px; margin: 0 auto; padding: 0 20px 96px; }
+  a { color: var(--accent); }
+
+  code, .mono, table.trace, .code-block, .pill-code {
+    font-family: "JetBrains Mono", ui-monospace, Menlo, monospace;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* ---------- Theme toggle ---------- */
+  .theme-toggle {
+    position: fixed; top: 16px; right: 16px; z-index: 40;
+    background: var(--card); border: 1px solid var(--border);
+    color: var(--ink); border-radius: 999px; padding: 8px 14px;
+    font-size: 13px; font-weight: 600; cursor: pointer; box-shadow: var(--shadow);
+    font-family: inherit;
+  }
+  .theme-toggle:hover { border-color: var(--accent); }
+
+  /* ---------- Hero ---------- */
+  header.hero {
+    padding: 72px 20px 40px;
+    text-align: left;
+    background:
+      radial-gradient(60% 90% at 85% 0%, color-mix(in srgb, var(--accent) 18%, transparent), transparent 70%),
+      var(--bg-2);
+    border-bottom: 1px solid var(--border);
+  }
+  .hero-inner { max-width: 920px; margin: 0 auto; }
+  .eyebrow {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-size: 12.5px; letter-spacing: 0.08em; text-transform: uppercase;
+    color: var(--muted); font-weight: 600; margin-bottom: 18px;
+    opacity: 0; animation: fadeInDown 0.6s ease forwards;
+  }
+  .eyebrow .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); }
+  h1 {
+    font-family: "Be Vietnam Pro", sans-serif;
+    font-weight: 800;
+    font-size: clamp(30px, 5vw, 48px);
+    line-height: 1.08;
+    margin: 0 0 16px;
+    text-wrap: balance;
+    opacity: 0; animation: fadeInDown 0.7s ease 0.08s forwards;
+  }
+  h1 em { color: var(--accent); font-style: normal; }
+  .hero p.lede {
+    font-size: clamp(16px, 2vw, 18.5px);
+    color: var(--muted);
+    max-width: 62ch;
+    margin: 0;
+    opacity: 0; animation: fadeInDown 0.7s ease 0.16s forwards;
+  }
+  @keyframes fadeInDown {
+    from { opacity: 0; transform: translateY(-14px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ---------- Sections ---------- */
+  section { margin-top: 56px; }
+  .section-head { margin-bottom: 20px; }
+  .section-num {
+    font-family: "JetBrains Mono", monospace; font-size: 12.5px; color: var(--accent);
+    font-weight: 700; letter-spacing: 0.05em; display: block; margin-bottom: 6px;
+  }
+  h2 {
+    font-size: clamp(22px, 3vw, 28px); font-weight: 800; margin: 0 0 8px; text-wrap: balance;
+  }
+  .section-sub { color: var(--muted); margin: 0; max-width: 68ch; }
+
+  .reveal { opacity: 0; transform: translateY(22px); }
+  .reveal.in { animation: slideUp 0.6s cubic-bezier(.2,.7,.2,1) forwards; }
+  @keyframes slideUp {
+    from { opacity: 0; transform: translateY(22px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ---------- Concept diagram ---------- */
+  .concept {
+    background: var(--card); border: 1px solid var(--border); border-radius: 16px;
+    padding: 24px; box-shadow: var(--shadow);
+  }
+  .concept pre {
+    margin: 0; font-size: 13px; line-height: 1.5; color: var(--ink);
+    overflow-x: auto; white-space: pre;
+  }
+  .concept pre .lo { color: var(--path); }
+  .concept pre .hi { color: var(--accent); font-weight: 700; }
+
+  /* ---------- Cards grid ---------- */
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+  @media (max-width: 720px) { .grid { grid-template-columns: 1fr; } }
+
+  .card {
+    background: var(--card); border: 1px solid var(--border); border-radius: 16px;
+    padding: 20px; box-shadow: var(--shadow); display: flex; flex-direction: column; gap: 14px;
+    transition: transform 0.35s ease, box-shadow 0.35s ease;
+  }
+  .card:hover { transform: translateY(-3px); }
+  .card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+  .card-title { font-weight: 700; font-size: 17px; margin: 0; }
+  .card-title .idx { color: var(--accent); font-family: "JetBrains Mono", monospace; font-size: 13px; margin-right: 6px; }
+  .badge {
+    display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 700;
+    padding: 4px 10px; border-radius: 999px; white-space: nowrap;
+  }
+  .badge.good { color: var(--good); background: var(--good-bg); }
+  .badge.warn { color: var(--warn); background: var(--warn-bg); }
+  .badge.bad { color: var(--bad); background: var(--bad-bg); }
+
+  .ipo { display: flex; flex-wrap: wrap; gap: 8px; font-size: 12.5px; }
+  .ipo span {
+    background: var(--bg-2); border: 1px solid var(--border); border-radius: 8px;
+    padding: 4px 8px; color: var(--muted);
+  }
+  .ipo b { color: var(--ink); }
+
+  .code-block {
+    background: var(--code-bg); color: var(--code-ink); border-radius: 10px;
+    padding: 14px 16px; font-size: 12.6px; line-height: 1.6; overflow-x: auto;
+    white-space: pre;
+  }
+  .code-block .c1 { color: #8b8578; }
+  .code-block .kw { color: #e8a94f; }
+  .code-block .fn { color: #7fc8ff; }
+  .code-block .st { color: #a8d99a; }
+
+  .canvas-wrap {
+    background: var(--bg-2); border: 1px solid var(--border); border-radius: 10px;
+    padding: 10px; position: relative;
+  }
+  canvas { display: block; width: 100%; height: 150px; border-radius: 6px; }
+  .canvas-controls {
+    display: flex; align-items: center; justify-content: space-between; margin-top: 8px;
+    font-size: 12px; color: var(--muted);
+  }
+  .play-btn {
+    font-family: inherit; font-weight: 700; font-size: 12.5px; cursor: pointer;
+    background: var(--accent); color: var(--accent-ink); border: none; border-radius: 8px;
+    padding: 6px 12px; transition: filter 0.2s ease, transform 0.15s ease;
+  }
+  .play-btn:hover { filter: brightness(1.08); }
+  .play-btn:active { transform: scale(0.96); }
+
+  .verdict { font-size: 13.5px; color: var(--muted); }
+  .verdict b { color: var(--ink); }
+
+  /* ---------- Trace table ---------- */
+  .trace-scroll { overflow-x: auto; border-radius: 12px; border: 1px solid var(--border); }
+  table.trace {
+    width: 100%; border-collapse: collapse; font-size: 12.8px; min-width: 480px; background: var(--card);
+  }
+  table.trace th, table.trace td { padding: 9px 12px; text-align: right; border-bottom: 1px solid var(--border); }
+  table.trace th:first-child, table.trace td:first-child { text-align: left; }
+  table.trace thead th {
+    background: var(--bg-2); font-weight: 700; color: var(--muted); font-size: 11.5px;
+    text-transform: uppercase; letter-spacing: 0.04em;
+  }
+  table.trace td.ptr { color: var(--accent); font-weight: 700; }
+  table.trace tr.done td { color: var(--good); font-weight: 600; }
+
+  /* ---------- Comparison table ---------- */
+  .cmp-scroll { overflow-x: auto; border-radius: 14px; border: 1px solid var(--border); box-shadow: var(--shadow); }
+  table.cmp { width: 100%; border-collapse: collapse; background: var(--card); min-width: 620px; }
+  table.cmp th, table.cmp td { padding: 14px 16px; text-align: left; border-bottom: 1px solid var(--border); font-size: 13.6px; vertical-align: top; }
+  table.cmp thead th { background: var(--bg-2); font-weight: 700; font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); }
+  table.cmp tbody tr:last-child td { border-bottom: none; }
+  table.cmp td.state { font-weight: 700; }
+
+  /* ---------- Good vs bad data ---------- */
+  .duo { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+  @media (max-width: 720px) { .duo { grid-template-columns: 1fr; } }
+  .duo .card.good-card { border-color: color-mix(in srgb, var(--good) 40%, var(--border)); }
+  .duo .card.bad-card { border-color: color-mix(in srgb, var(--bad) 40%, var(--border)); }
+
+  /* ---------- Exercise ---------- */
+  .exercise {
+    background: var(--card); border: 1px solid var(--border); border-radius: 16px;
+    padding: 22px 24px; box-shadow: var(--shadow);
+  }
+  .exercise p { margin: 0 0 10px; }
+  details.answer { margin-top: 12px; }
+  details.answer summary {
+    cursor: pointer; font-weight: 700; color: var(--accent); font-size: 13.5px;
+    list-style: none; display: inline-flex; align-items: center; gap: 6px;
+  }
+  details.answer summary::-webkit-details-marker { display: none; }
+  details.answer summary::before { content: "▶"; font-size: 10px; transition: transform 0.25s ease; }
+  details.answer[open] summary::before { transform: rotate(90deg); }
+  details.answer .ans-body {
+    margin-top: 10px; padding: 12px 14px; background: var(--bg-2); border-radius: 10px;
+    font-size: 13.8px; animation: slideDown 0.35s ease;
+  }
+  @keyframes slideDown { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
+
+  /* ---------- Quiz ---------- */
+  .quiz-card {
+    background: var(--card); border: 1px solid var(--border); border-radius: 16px;
+    padding: 22px 24px; box-shadow: var(--shadow); margin-bottom: 16px;
+  }
+  .quiz-q { font-weight: 700; margin: 0 0 12px; font-size: 15px; }
+  .quiz-opts { display: flex; flex-direction: column; gap: 8px; }
+  .quiz-opt {
+    display: flex; align-items: center; gap: 10px; padding: 10px 12px;
+    border: 1px solid var(--border); border-radius: 10px; cursor: pointer;
+    transition: border-color 0.2s ease, background 0.2s ease;
+    font-size: 14px;
+  }
+  .quiz-opt:hover { border-color: var(--accent); }
+  .quiz-opt input { accent-color: var(--accent); }
+  .quiz-opt.correct { border-color: var(--good); background: var(--good-bg); }
+  .quiz-opt.wrong { border-color: var(--bad); background: var(--bad-bg); }
+  .quiz-feedback {
+    margin-top: 10px; font-size: 13.5px; font-weight: 600; min-height: 18px;
+  }
+  .quiz-feedback.good { color: var(--good); }
+  .quiz-feedback.bad { color: var(--bad); }
+
+  .quiz-actions { display: flex; align-items: center; gap: 14px; margin-top: 8px; }
+  .btn-primary {
+    font-family: inherit; font-weight: 700; font-size: 14px; cursor: pointer;
+    background: var(--accent); color: var(--accent-ink); border: none; border-radius: 10px;
+    padding: 11px 20px; transition: filter 0.2s ease, transform 0.15s ease;
+  }
+  .btn-primary:hover { filter: brightness(1.08); }
+  .btn-primary:active { transform: scale(0.97); }
+  #quiz-score {
+    font-weight: 700; font-size: 14px; opacity: 0;
+  }
+  #quiz-score.show { animation: slideDown 0.4s ease forwards; }
+
+  footer {
+    margin-top: 72px; padding-top: 24px; border-top: 1px solid var(--border);
+    color: var(--muted); font-size: 12.5px; display: flex; flex-wrap: wrap; gap: 8px 16px; justify-content: space-between;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
+  }
+</style>
+</head>
+<body>
+
+<button class="theme-toggle" id="themeToggle" type="button" aria-label="Đổi giao diện sáng/tối">🌓 Đổi giao diện</button>
+
+<header class="hero">
+  <div class="hero-inner">
+    <div class="eyebrow"><span class="dot"></span> AI-For-Beginners · Bài học ngẫu nhiên #GD-4ecf3f · 19/08/2026</div>
+    <h1>Gradient Descent: <em>Đi Tìm Đáy Thung Lũng</em></h1>
+    <p class="lede">
+      Model của bạn học bằng cách nào? Bằng cách đi từng bước nhỏ xuống "thung lũng sai số"
+      cho tới khi chạm đáy — nơi loss thấp nhất. Câu hỏi là: <b>đi từng bước như thế nào</b>
+      mới nhanh mà không bị trượt ngã?
+    </p>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <!-- 1. CONCEPT -->
+  <section>
+    <div class="section-head reveal">
+      <span class="section-num">01 · Khái niệm</span>
+      <h2>Loss landscape là một cái thung lũng</h2>
+      <p class="section-sub">
+        Trục ngang là trọng số <code>w</code> mô hình đang học, trục dọc là loss
+        <code>L(w)</code>. Ta bắt đầu ở đâu đó trên sườn dốc, rồi lăn xuống theo hướng
+        <b>ngược chiều gradient</b> — vì gradient luôn chỉ lên dốc, đi ngược lại là đi xuống.
+      </p>
+    </div>
+    <div class="concept reveal">
+<pre>Loss L(w)
+  30 │●
+     │ ╲
+     │  ╲
+  15 │   ╲
+     │    ╲___
+     │        ╲___              w cập nhật: w ← w − η · ∂L/∂w
+   4 │            ╲___                              ↑
+     │                ╲●__                      learning rate η
+     │                    ╲●_●  ← <span class="hi">đáy thung lũng (w* = 2)</span>
+   0 └──────────────────────────────────────── w
+     0        1        2        3        4
+              <span class="lo">bước 1 → bước 2 → bước 3 → hội tụ</span></pre>
+    </div>
+  </section>
+
+  <!-- 2. FOUR STATES -->
+  <section>
+    <div class="section-head reveal">
+      <span class="section-num">02 · Bốn cách "lăn xuống dốc"</span>
+      <h2>Batch · SGD · Mini-batch · Momentum</h2>
+      <p class="section-sub">
+        Cùng bài toán hồi quy tuyến tính <code>y = 2x</code> với dữ liệu
+        <code>X=[1,2,3,4], y=[2,4,6,8]</code>, bắt đầu từ <code>w₀ = 0</code>, learning rate
+        <code>η = 0.05</code>. Bấm ▶ để xem viên bi lăn xuống thung lũng theo từng cách.
+      </p>
+    </div>
+
+    <div class="grid">
+
+      <!-- BATCH GD -->
+      <div class="card reveal">
+        <div class="card-top">
+          <p class="card-title"><span class="idx">01</span>Batch Gradient Descent</p>
+          <span class="badge good">✅ Ổn định</span>
+        </div>
+        <div class="ipo">
+          <span><b>Input:</b> toàn bộ 4 điểm dữ liệu</span>
+          <span><b>Xử lý:</b> 1 lần quét full dataset / bước</span>
+          <span><b>Output:</b> 1 lần update w / epoch</span>
+        </div>
+        <div class="code-block"><span class="kw">for</span> epoch <span class="kw">in</span> <span class="fn">range</span>(N):
+    grad = <span class="fn">mean</span>(X * (w*X - y)) * 2
+    w -= lr * grad  <span class="c1"># update 1 lần / epoch</span></div>
+        <div class="canvas-wrap">
+          <canvas id="cv-batch" width="600" height="150"></canvas>
+          <div class="canvas-controls">
+            <span>4 bước → w ≈ 1.992</span>
+            <button class="play-btn" data-target="batch" type="button">▶ Play</button>
+          </div>
+        </div>
+        <div class="trace-scroll">
+          <table class="trace" id="trace-batch"></table>
+        </div>
+        <p class="verdict"><b>Đánh giá:</b> đường đi mượt, không lệch hướng — nhưng mỗi bước phải quét <i>toàn bộ</i> dữ liệu nên chậm khi dataset lớn (triệu dòng).</p>
+      </div>
+
+      <!-- SGD -->
+      <div class="card reveal">
+        <div class="card-top">
+          <p class="card-title"><span class="idx">02</span>Stochastic GD (SGD)</p>
+          <span class="badge warn">⚠️ Rung lắc</span>
+        </div>
+        <div class="ipo">
+          <span><b>Input:</b> 1 điểm dữ liệu / bước</span>
+          <span><b>Xử lý:</b> update ngay sau mỗi điểm</span>
+          <span><b>Output:</b> 4 lần update / epoch</span>
+        </div>
+        <div class="code-block"><span class="kw">for</span> epoch <span class="kw">in</span> <span class="fn">range</span>(N):
+    <span class="kw">for</span> xi, yi <span class="kw">in</span> shuffle(X, y):
+        grad = 2*xi*(w*xi - yi)
+        w -= lr * grad  <span class="c1"># update ngay lập tức</span></div>
+        <div class="canvas-wrap">
+          <canvas id="cv-sgd" width="600" height="150"></canvas>
+          <div class="canvas-controls">
+            <span>5 bước → w ≈ 2.058 (jitter)</span>
+            <button class="play-btn" data-target="sgd" type="button">▶ Play</button>
+          </div>
+        </div>
+        <div class="trace-scroll">
+          <table class="trace" id="trace-sgd"></table>
+        </div>
+        <p class="verdict"><b>Đánh giá:</b> update siêu nhanh, tốn ít bộ nhớ — nhưng đường đi zic-zac vì mỗi điểm "kéo" w theo hướng riêng của nó.</p>
+      </div>
+
+      <!-- MINI-BATCH -->
+      <div class="card reveal">
+        <div class="card-top">
+          <p class="card-title"><span class="idx">03</span>Mini-batch GD</p>
+          <span class="badge good">✅ Cân bằng</span>
+        </div>
+        <div class="ipo">
+          <span><b>Input:</b> batch nhỏ (2 điểm / batch)</span>
+          <span><b>Xử lý:</b> quét theo từng batch</span>
+          <span><b>Output:</b> 2 lần update / epoch</span>
+        </div>
+        <div class="code-block"><span class="kw">for</span> epoch <span class="kw">in</span> <span class="fn">range</span>(N):
+    <span class="kw">for</span> Xb, yb <span class="kw">in</span> batches(X, y, size=2):
+        grad = <span class="fn">mean</span>(Xb * (w*Xb - yb)) * 2
+        w -= lr * grad  <span class="c1"># cân bằng tốc độ / ổn định</span></div>
+        <div class="canvas-wrap">
+          <canvas id="cv-mini" width="600" height="150"></canvas>
+          <div class="canvas-controls">
+            <span>4 bước → w ≈ 1.930</span>
+            <button class="play-btn" data-target="mini" type="button">▶ Play</button>
+          </div>
+        </div>
+        <div class="trace-scroll">
+          <table class="trace" id="trace-mini"></table>
+        </div>
+        <p class="verdict"><b>Đánh giá:</b> đây là lựa chọn mặc định trong thực tế (batch_size=32/64/128) — tận dụng GPU tốt, dao động vừa phải.</p>
+      </div>
+
+      <!-- MOMENTUM -->
+      <div class="card reveal">
+        <div class="card-top">
+          <p class="card-title"><span class="idx">04</span>GD + Momentum</p>
+          <span class="badge warn">⚠️ Dễ overshoot</span>
+        </div>
+        <div class="ipo">
+          <span><b>Input:</b> full batch + "đà" v (β=0.5)</span>
+          <span><b>Xử lý:</b> cộng dồn vận tốc trước đó</span>
+          <span><b>Output:</b> hội tụ nhanh, có trớn</span>
+        </div>
+        <div class="code-block">v = 0
+<span class="kw">for</span> epoch <span class="kw">in</span> <span class="fn">range</span>(N):
+    grad = <span class="fn">mean</span>(X * (w*X - y)) * 2
+    v = beta*v + grad   <span class="c1"># tích lũy đà</span>
+    w -= lr * v</div>
+        <div class="canvas-wrap">
+          <canvas id="cv-mom" width="600" height="150"></canvas>
+          <div class="canvas-controls">
+            <span>4 bước → w ≈ 2.227 (vượt qua rồi lùi lại)</span>
+            <button class="play-btn" data-target="mom" type="button">▶ Play</button>
+          </div>
+        </div>
+        <div class="trace-scroll">
+          <table class="trace" id="trace-mom"></table>
+        </div>
+        <p class="verdict"><b>Đánh giá:</b> giống xe có trớn lao xuống dốc — nhanh hơn batch GD thường, nhưng có thể "lao qua" đáy thung lũng rồi mới quay lại.</p>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- 3. COMPARISON TABLE -->
+  <section>
+    <div class="section-head reveal">
+      <span class="section-num">03 · Tổng kết</span>
+      <h2>Bảng so sánh 4 trạng thái</h2>
+    </div>
+    <div class="cmp-scroll reveal">
+      <table class="cmp">
+        <thead>
+          <tr><th>Trạng thái</th><th>Input</th><th>Xử lý</th><th>Output</th><th>Đánh giá</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="state">Batch GD</td>
+            <td>Toàn bộ dataset</td>
+            <td>1 lần quét full data / bước</td>
+            <td>Đường hội tụ mượt, ít bước</td>
+            <td><span class="badge good">✅ Ổn định</span> nhưng chậm với data lớn</td>
+          </tr>
+          <tr>
+            <td class="state">SGD</td>
+            <td>1 sample / bước</td>
+            <td>Update tức thời từng điểm</td>
+            <td>Nhiều bước, zic-zac</td>
+            <td><span class="badge warn">⚠️ Nhanh nhưng ồn</span></td>
+          </tr>
+          <tr>
+            <td class="state">Mini-batch</td>
+            <td>Batch nhỏ (32–256)</td>
+            <td>Quét theo lô, song song GPU tốt</td>
+            <td>Cân bằng tốc độ/ổn định</td>
+            <td><span class="badge good">✅ Lựa chọn mặc định</span></td>
+          </tr>
+          <tr>
+            <td class="state">Momentum</td>
+            <td>Full/mini-batch + vận tốc v</td>
+            <td>Cộng dồn đà từ các bước trước</td>
+            <td>Hội tụ nhanh, có thể overshoot</td>
+            <td><span class="badge warn">⚠️ Cần tune β</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- 4. GOOD VS BAD DATA -->
+  <section>
+    <div class="section-head reveal">
+      <span class="section-num">04 · Thực tế</span>
+      <h2>Dữ liệu / tham số tốt vs xấu</h2>
+      <p class="section-sub">
+        Cùng công thức Batch GD, chỉ đổi <code>learning rate η</code> — kết quả khác nhau một trời một vực.
+      </p>
+    </div>
+    <div class="duo">
+      <div class="card good-card reveal">
+        <div class="card-top">
+          <p class="card-title">η = 0.05 — hợp lý</p>
+          <span class="badge good">✅ Hội tụ</span>
+        </div>
+        <div class="trace-scroll">
+          <table class="trace">
+            <thead><tr><th>Bước</th><th>w</th><th>Loss</th></tr></thead>
+            <tbody>
+              <tr><td>0</td><td>0.000</td><td>30.000</td></tr>
+              <tr><td>1</td><td>1.500</td><td>1.875</td></tr>
+              <tr><td>2</td><td>1.875</td><td>0.117</td></tr>
+              <tr class="done"><td>3 ✓</td><td>1.969</td><td>0.007</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="verdict">Loss giảm đều, tiến gần <code>w*=2</code> chỉ sau 3 bước.</p>
+      </div>
+      <div class="card bad-card reveal">
+        <div class="card-top">
+          <p class="card-title">η = 0.5 — quá lớn</p>
+          <span class="badge bad">❌ Phân kỳ</span>
+        </div>
+        <div class="trace-scroll">
+          <table class="trace">
+            <thead><tr><th>Bước</th><th>w</th><th>Loss</th></tr></thead>
+            <tbody>
+              <tr><td>0</td><td>0.00</td><td>30.0</td></tr>
+              <tr><td>1</td><td>15.00</td><td>1268</td></tr>
+              <tr><td>2</td><td>−82.50</td><td>47 631</td></tr>
+              <tr class="done" style="color:var(--bad)"><td>3 ✗</td><td>551.25</td><td>2 267 906</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="verdict" style="color:var(--bad)">Bước nhảy quá to → "bay qua" đáy thung lũng, loss nổ tung thay vì giảm. Đây là dấu hiệu kinh điển của <code>NaN loss</code>.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 5. EXERCISE -->
+  <section>
+    <div class="section-head reveal">
+      <span class="section-num">05 · Bài tập nhỏ</span>
+      <h2>Tự tay tính một bước Batch GD</h2>
+    </div>
+    <div class="exercise reveal">
+      <p>
+        Cho dataset <code>X = [1, 2, 3]</code>, <code>y = [3, 6, 9]</code>,
+        <code>w₀ = 0</code>, learning rate <code>η = 0.1</code>.
+        Tính <code>w</code> sau <b>1 bước</b> Batch GD, biết
+        <code>grad = (2/n) · Σ xᵢ(w·xᵢ − yᵢ)</code>.
+      </p>
+      <details class="answer">
+        <summary>Xem đáp án</summary>
+        <div class="ans-body">
+          <code>grad(w=0) = (2/3) × (1·(0−3) + 2·(0−6) + 3·(0−9)) = (2/3) × (−42) = −28</code><br>
+          <code>w₁ = w₀ − η·grad = 0 − 0.1 × (−28) = 2.8</code><br>
+          Rất gần <code>w* = 3</code> — chỉ 1 bước đã đi được gần 93% quãng đường!
+        </div>
+      </details>
+    </div>
+  </section>
+
+  <!-- 6. QUIZ -->
+  <section>
+    <div class="section-head reveal">
+      <span class="section-num">06 · Tự kiểm tra</span>
+      <h2>Quiz nhanh (4 câu)</h2>
+    </div>
+
+    <form id="quizForm">
+      <div class="quiz-card reveal">
+        <p class="quiz-q">1. Thuật toán nào update trọng số ngay sau MỖI 1 sample?</p>
+        <div class="quiz-opts" data-correct="b">
+          <label class="quiz-opt"><input type="radio" name="q1" value="a"> Batch Gradient Descent</label>
+          <label class="quiz-opt"><input type="radio" name="q1" value="b"> Stochastic Gradient Descent (SGD)</label>
+          <label class="quiz-opt"><input type="radio" name="q1" value="c"> Mini-batch Gradient Descent</label>
+        </div>
+        <div class="quiz-feedback"></div>
+      </div>
+
+      <div class="quiz-card reveal">
+        <p class="quiz-q">2. Learning rate quá lớn thường dẫn đến hiện tượng gì?</p>
+        <div class="quiz-opts" data-correct="c">
+          <label class="quiz-opt"><input type="radio" name="q2" value="a"> Model học chậm hơn nhưng vẫn hội tụ</label>
+          <label class="quiz-opt"><input type="radio" name="q2" value="b"> Không ảnh hưởng gì tới quá trình học</label>
+          <label class="quiz-opt"><input type="radio" name="q2" value="c"> Loss dao động mạnh hoặc "nổ tung" (phân kỳ / NaN)</label>
+        </div>
+        <div class="quiz-feedback"></div>
+      </div>
+
+      <div class="quiz-card reveal">
+        <p class="quiz-q">3. Batch size nào thường được dùng mặc định trong training thực tế (deep learning)?</p>
+        <div class="quiz-opts" data-correct="b">
+          <label class="quiz-opt"><input type="radio" name="q3" value="a"> Batch size = 1 (SGD thuần)</label>
+          <label class="quiz-opt"><input type="radio" name="q3" value="b"> Mini-batch, ví dụ 32/64/128</label>
+          <label class="quiz-opt"><input type="radio" name="q3" value="c"> Batch size = toàn bộ dataset luôn</label>
+        </div>
+        <div class="quiz-feedback"></div>
+      </div>
+
+      <div class="quiz-card reveal">
+        <p class="quiz-q">4. Momentum giúp gradient descent điều gì?</p>
+        <div class="quiz-opts" data-correct="a">
+          <label class="quiz-opt"><input type="radio" name="q4" value="a"> Tích lũy "đà" từ các bước trước để tăng tốc hội tụ (nhưng có thể overshoot)</label>
+          <label class="quiz-opt"><input type="radio" name="q4" value="b"> Luôn đảm bảo không bao giờ vượt qua điểm tối ưu</label>
+          <label class="quiz-opt"><input type="radio" name="q4" value="c"> Loại bỏ hoàn toàn nhu cầu chọn learning rate</label>
+        </div>
+        <div class="quiz-feedback"></div>
+      </div>
+
+      <div class="quiz-actions reveal">
+        <button class="btn-primary" type="button" id="checkQuiz">Kiểm tra đáp án</button>
+        <span id="quiz-score"></span>
+      </div>
+    </form>
+  </section>
+
+  <footer>
+    <span>Chủ đề: Optimization · AI-For-Beginners #GD-4ecf3f</span>
+    <span>Claude-lession · tự động tạo · 19/08/2026</span>
+  </footer>
+</div>
+
+<script>
+(function () {
+  // Theme toggle
+  var root = document.documentElement;
+  var btn = document.getElementById('themeToggle');
+  btn.addEventListener('click', function () {
+    var cur = root.getAttribute('data-theme');
+    var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    var effectiveDark = cur ? cur === 'dark' : prefersDark;
+    root.setAttribute('data-theme', effectiveDark ? 'light' : 'dark');
+  });
+
+  // Scroll reveal
+  var els = document.querySelectorAll('.reveal');
+  var io = new IntersectionObserver(function (entries) {
+    entries.forEach(function (e) {
+      if (e.isIntersecting) {
+        e.target.classList.add('in');
+        io.unobserve(e.target);
+      }
+    });
+  }, { threshold: 0.12 });
+  els.forEach(function (el) { io.observe(el); });
+
+  // ---------- Traces (real computed data) ----------
+  var traces = {
+    batch: [ [0, 0, 30], [1, 1.5, 1.875], [2, 1.875, 0.1172], [3, 1.96875, 0.00732], [4, 1.9921875, 0.000458] ],
+    sgd:   [ [0, 0, 30], [1, 0.2, 26.28], [2, 0.92, 8.415], [3, 1.892, 0.0876], [4, 2.0648, 0.03149], [5, 2.0583, 0.0255] ],
+    mini:  [ [0, 0, 30], [1, 0.5, 16.875], [2, 2.375, 1.055], [3, 2.28125, 0.5923], [4, 1.9296875, 0.03706] ],
+    mom:   [ [0, 0, 30], [1, 1.5, 1.875], [2, 2.625, 2.930], [3, 2.71875, 3.867], [4, 2.2265625, 0.4277] ]
+  };
+
+  function renderTrace(id, rows) {
+    var el = document.getElementById(id);
+    if (!el) return;
+    var html = '<thead><tr><th>Bước</th><th>w</th><th>Loss</th></tr></thead><tbody>';
+    rows.forEach(function (r, i) {
+      var last = i === rows.length - 1;
+      html += '<tr class="' + (last ? 'done' : '') + '"><td class="' + (last ? '' : '') + '">' + r[0] + (last ? ' ✓' : '') + '</td><td>' + r[1].toFixed(4) + '</td><td>' + r[2].toFixed(4) + '</td></tr>';
+    });
+    html += '</tbody>';
+    el.innerHTML = html;
+  }
+  Object.keys(traces).forEach(function (k) { renderTrace('trace-' + k, traces[k]); });
+
+  // ---------- Canvas valley animation ----------
+  function lossOf(w) { return 7.5 * Math.pow(w - 2, 2); }
+
+  function drawValley(ctx, w, h, colorPath, colorAccent, progress, wPoints) {
+    ctx.clearRect(0, 0, w, h);
+    var wMin = -1, wMax = 4.2;
+    var lMax = lossOf(wMin);
+    var padL = 8, padR = 8, padT = 14, padB = 14;
+    function X(wv) { return padL + (wv - wMin) / (wMax - wMin) * (w - padL - padR); }
+    function Y(lv) { return padT + (1 - lv / lMax) * (h - padT - padB); }
+
+    // valley curve
+    ctx.beginPath();
+    ctx.lineWidth = 2;
+    var css = getComputedStyle(document.documentElement);
+    ctx.strokeStyle = colorPath;
+    ctx.globalAlpha = 0.55;
+    for (var i = 0; i <= 60; i++) {
+      var wv = wMin + (i / 60) * (wMax - wMin);
+      var lv = lossOf(wv);
+      var x = X(wv), y = Y(lv);
+      if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+
+    // minimum marker
+    ctx.beginPath();
+    ctx.strokeStyle = colorPath;
+    ctx.globalAlpha = 0.35;
+    ctx.setLineDash([3, 4]);
+    ctx.moveTo(X(2), padT);
+    ctx.lineTo(X(2), h - padB);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.globalAlpha = 1;
+
+    // path travelled so far
+    var n = wPoints.length;
+    var count = Math.max(1, Math.floor(progress * (n - 1)) + 1);
+    ctx.beginPath();
+    ctx.lineWidth = 2.4;
+    ctx.strokeStyle = colorAccent;
+    for (var j = 0; j < count; j++) {
+      var wv2 = wPoints[j];
+      var x2 = X(wv2), y2 = Y(lossOf(wv2));
+      if (j === 0) ctx.moveTo(x2, y2); else ctx.lineTo(x2, y2);
+      ctx.fillStyle = colorAccent;
+      ctx.globalAlpha = 0.35;
+      ctx.beginPath(); ctx.arc(x2, y2, 3, 0, Math.PI * 2); ctx.fill();
+      ctx.globalAlpha = 1;
+      ctx.beginPath(); ctx.moveTo(x2, y2);
+    }
+    ctx.stroke();
+
+    // ball (interpolated within current segment)
+    var segF = progress * (n - 1);
+    var idx0 = Math.min(n - 2, Math.floor(segF));
+    var t = Math.max(0, Math.min(1, segF - idx0));
+    if (n === 1) { idx0 = 0; t = 0; }
+    var wA = wPoints[idx0], wB = wPoints[Math.min(n - 1, idx0 + 1)];
+    var wBall = wA + (wB - wA) * t;
+    var bx = X(wBall), by = Y(lossOf(wBall));
+    ctx.beginPath();
+    ctx.fillStyle = colorAccent;
+    ctx.arc(bx, by, 6, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.strokeStyle = colorAccent;
+    ctx.globalAlpha = 0.3;
+    ctx.arc(bx, by, 10, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+  }
+
+  function setupCanvas(canvasId, btnKey, wPoints) {
+    var canvas = document.getElementById(canvasId);
+    if (!canvas) return;
+    var dpr = window.devicePixelRatio || 1;
+    function resize() {
+      var rect = canvas.getBoundingClientRect();
+      canvas.width = rect.width * dpr;
+      canvas.height = rect.height * dpr;
+      var ctx = canvas.getContext('2d');
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
+    resize();
+    window.addEventListener('resize', resize);
+    var ctx = canvas.getContext('2d');
+    var css = getComputedStyle(document.documentElement);
+    var colorPath = css.getPropertyValue('--path').trim() || '#3f8f7c';
+    var colorAccent = css.getPropertyValue('--accent').trim() || '#c97a2b';
+
+    function frame(progress) {
+      var rect = canvas.getBoundingClientRect();
+      drawValley(ctx, rect.width, rect.height, colorPath, colorAccent, progress, wPoints);
+    }
+    frame(0);
+
+    var playing = false;
+    var btn = document.querySelector('.play-btn[data-target="' + btnKey + '"]');
+    if (!btn) return;
+    btn.addEventListener('click', function () {
+      if (playing) return;
+      playing = true;
+      var reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      var duration = reduced ? 50 : 1800;
+      var start = null;
+      function step(ts) {
+        if (start === null) start = ts;
+        var p = Math.min(1, (ts - start) / duration);
+        frame(p);
+        if (p < 1) {
+          requestAnimationFrame(step);
+        } else {
+          playing = false;
+        }
+      }
+      requestAnimationFrame(step);
+    });
+  }
+
+  setupCanvas('cv-batch', 'batch', traces.batch.map(function (r) { return r[1]; }));
+  setupCanvas('cv-sgd', 'sgd', traces.sgd.map(function (r) { return r[1]; }));
+  setupCanvas('cv-mini', 'mini', traces.mini.map(function (r) { return r[1]; }));
+  setupCanvas('cv-mom', 'mom', traces.mom.map(function (r) { return r[1]; }));
+
+  // ---------- Quiz ----------
+  var quizGroups = document.querySelectorAll('.quiz-opts');
+  quizGroups.forEach(function (group) {
+    var name = group.querySelector('input').name;
+    var opts = group.querySelectorAll('.quiz-opt');
+    opts.forEach(function (opt) {
+      opt.addEventListener('click', function () {
+        var fb = group.parentElement.querySelector('.quiz-feedback');
+        var input = opt.querySelector('input');
+        var correct = group.getAttribute('data-correct');
+        opts.forEach(function (o) { o.classList.remove('correct', 'wrong'); });
+        if (input.value === correct) {
+          opt.classList.add('correct');
+          fb.textContent = '✅ Chính xác!';
+          fb.className = 'quiz-feedback good';
+        } else {
+          opt.classList.add('wrong');
+          fb.textContent = '❌ Chưa đúng, thử lại nhé.';
+          fb.className = 'quiz-feedback bad';
+        }
+      });
+    });
+  });
+
+  document.getElementById('checkQuiz').addEventListener('click', function () {
+    var total = quizGroups.length;
+    var correctCount = 0;
+    quizGroups.forEach(function (group) {
+      var correct = group.getAttribute('data-correct');
+      var checked = group.querySelector('input:checked');
+      var opts = group.querySelectorAll('.quiz-opt');
+      opts.forEach(function (o) {
+        var v = o.querySelector('input').value;
+        o.classList.remove('correct', 'wrong');
+        if (v === correct) o.classList.add('correct');
+        else if (checked && v === checked.value) o.classList.add('wrong');
+      });
+      if (checked && checked.value === correct) correctCount++;
+    });
+    var scoreEl = document.getElementById('quiz-score');
+    scoreEl.textContent = 'Điểm của bạn: ' + correctCount + '/' + total;
+    scoreEl.className = 'show';
+  });
+})();
+</script>
+</body>
+</html>

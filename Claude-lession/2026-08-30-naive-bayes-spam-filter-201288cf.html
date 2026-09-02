@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Naive Bayes — Học AI/ML dễ hiểu</title>
+<style>
+  :root{
+    --bg:#f6f7fb; --bg2:#ffffff; --text:#1c1f2b; --muted:#5b6072;
+    --accent:#5b5ff0; --accent2:#00b894; --warn:#f0a500; --bad:#e0455a;
+    --border:#e3e5ef; --card:#ffffff; --code-bg:#1c1f2b; --code-text:#e8eaf6;
+    --shadow: 0 8px 24px rgba(30,32,60,0.08);
+  }
+  [data-theme="dark"]{
+    --bg:#12131c; --bg2:#181a26; --text:#eceefb; --muted:#a2a6c2;
+    --accent:#8b8ffb; --accent2:#3ddc97; --warn:#ffc233; --bad:#ff6b7d;
+    --border:#2a2d40; --card:#1c1e2c; --code-bg:#0d0e16; --code-text:#dfe2f7;
+    --shadow: 0 8px 28px rgba(0,0,0,0.45);
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; font-family:"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+    background:var(--bg); color:var(--text); transition:background .4s ease,color .4s ease;
+    line-height:1.6;
+  }
+  .wrap{max-width:960px; margin:0 auto; padding:20px 16px 80px;}
+  header.hero{
+    text-align:center; padding:36px 20px; border-radius:20px;
+    background:linear-gradient(135deg,var(--accent),#9b8cff);
+    color:#fff; box-shadow:var(--shadow);
+    animation: fadeInDown .7s ease both;
+    position:relative;
+  }
+  header.hero h1{margin:0 0 8px; font-size:clamp(22px,4vw,34px);}
+  header.hero p{margin:0; opacity:.92; font-size:15px;}
+  .topbar{display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:14px;}
+  .badge{
+    display:inline-block; background:rgba(255,255,255,.18); padding:4px 12px;
+    border-radius:999px; font-size:12px; letter-spacing:.5px; margin-bottom:10px;
+  }
+  button.toggle{
+    background:var(--card); color:var(--text); border:1px solid var(--border);
+    padding:8px 14px; border-radius:999px; cursor:pointer; font-size:13px;
+    box-shadow:var(--shadow); transition:transform .25s ease, background .3s ease;
+  }
+  button.toggle:hover{transform:translateY(-2px);}
+  section{
+    background:var(--card); border:1px solid var(--border); border-radius:16px;
+    padding:22px 20px; margin-top:22px; box-shadow:var(--shadow);
+    animation: slideUp .6s ease both;
+  }
+  section h2{margin-top:0; font-size:20px; display:flex; align-items:center; gap:8px;}
+  section h2 .num{
+    background:var(--accent); color:#fff; width:28px; height:28px; border-radius:50%;
+    display:inline-flex; align-items:center; justify-content:center; font-size:14px; flex:none;
+  }
+  p{color:var(--text);}
+  .muted{color:var(--muted);}
+  code, pre{font-family:"Fira Code",Consolas,monospace;}
+  pre{
+    background:var(--code-bg); color:var(--code-text); padding:14px 16px; border-radius:12px;
+    overflow-x:auto; font-size:13px; line-height:1.55;
+  }
+  code.inline{background:var(--code-bg); color:var(--code-text); padding:2px 6px; border-radius:6px; font-size:.9em;}
+  table{width:100%; border-collapse:collapse; margin:12px 0; font-size:14px; overflow-x:auto; display:block;}
+  table thead, table tbody{width:100%;}
+  th,td{border:1px solid var(--border); padding:8px 10px; text-align:left; vertical-align:top;}
+  th{background:var(--bg); color:var(--muted); font-weight:600;}
+  .grade-good{color:var(--accent2); font-weight:700;}
+  .grade-ok{color:var(--warn); font-weight:700;}
+  .grade-bad{color:var(--bad); font-weight:700;}
+  .state-card{
+    border:1px dashed var(--border); border-radius:14px; padding:16px; margin:14px 0;
+    background:var(--bg); animation: slideUp .5s ease both;
+  }
+  .state-card h3{margin:0 0 6px; font-size:16px; display:flex; align-items:center; gap:8px; flex-wrap:wrap;}
+  .pill{font-size:11px; padding:3px 10px; border-radius:999px; font-weight:700;}
+  .pill.good{background:rgba(0,184,148,.15); color:var(--accent2);}
+  .pill.ok{background:rgba(240,165,0,.15); color:var(--warn);}
+  .pill.bad{background:rgba(224,69,90,.15); color:var(--bad);}
+  .ascii{
+    background:var(--code-bg); color:var(--code-text); padding:14px; border-radius:12px;
+    font-family:"Fira Code",Consolas,monospace; font-size:12.5px; white-space:pre; overflow-x:auto;
+  }
+  .grid2{display:grid; grid-template-columns:1fr; gap:14px;}
+  @media(min-width:720px){.grid2{grid-template-columns:1fr 1fr;}}
+  .demo-box{display:flex; flex-wrap:wrap; gap:10px; margin:14px 0;}
+  .demo-box label{display:flex; flex-direction:column; font-size:13px; color:var(--muted); gap:6px; flex:1; min-width:150px;}
+  .demo-box input, .demo-box select{
+    padding:10px 12px; border-radius:10px; border:1px solid var(--border);
+    background:var(--bg2); color:var(--text); font-size:14px;
+  }
+  .checkgrid{display:grid; grid-template-columns:repeat(2,1fr); gap:8px; margin:12px 0;}
+  @media(min-width:600px){.checkgrid{grid-template-columns:repeat(3,1fr);}}
+  .checkgrid label{
+    display:flex; align-items:center; gap:8px; padding:9px 10px; border-radius:10px;
+    border:1px solid var(--border); background:var(--bg2); font-size:13.5px; cursor:pointer;
+    transition:background .25s ease;
+  }
+  .checkgrid label:hover{background:var(--bg);}
+  .checkgrid input{accent-color:var(--accent);}
+  .radio-row{display:flex; gap:14px; flex-wrap:wrap; margin:10px 0;}
+  .radio-row label{display:flex; align-items:center; gap:6px; font-size:13.5px; cursor:pointer;}
+  .radio-row input{accent-color:var(--accent);}
+  .btn{
+    background:var(--accent); color:#fff; border:none; padding:11px 20px; border-radius:10px;
+    font-size:14px; cursor:pointer; font-weight:600; transition:transform .25s ease, box-shadow .25s ease;
+  }
+  .btn:hover{transform:translateY(-2px); box-shadow:0 6px 16px rgba(91,95,240,.35);}
+  .btn.secondary{background:var(--accent2);}
+  #stepBox{margin-top:14px; display:grid; grid-template-columns:1fr; gap:6px;}
+  .step-row{
+    padding:9px 12px; border-left:3px solid var(--border); border-radius:8px;
+    background:var(--bg); opacity:0; transform:translateY(6px); font-size:13px;
+    font-family:"Fira Code",Consolas,monospace;
+  }
+  .step-row.win{border-left-color:var(--accent2);}
+  .step-row.zero{border-left-color:var(--bad);}
+  .step-row.show{animation: slideDown .4s ease forwards;}
+  .pulse{animation: pulse 1s ease infinite;}
+  #resultBadge{
+    display:inline-block; margin-top:14px; padding:10px 18px; border-radius:12px; font-weight:700;
+    opacity:0;
+  }
+  #resultBadge.show{animation: slideDown .5s ease forwards;}
+  .ok-good{background:rgba(0,184,148,.15); color:var(--accent2);}
+  .ok-bad{background:rgba(224,69,90,.15); color:var(--bad);}
+  .ok-ok{background:rgba(240,165,0,.15); color:var(--warn);}
+  .quiz-q{margin-bottom:18px; padding-bottom:14px; border-bottom:1px dashed var(--border);}
+  .quiz-q:last-child{border-bottom:none;}
+  .quiz-opt{
+    display:flex; align-items:center; gap:8px; padding:8px 10px; border-radius:10px; margin:4px 0;
+    cursor:pointer; border:1px solid transparent; transition:background .25s ease;
+  }
+  .quiz-opt:hover{background:var(--bg);}
+  .quiz-opt input{accent-color:var(--accent);}
+  .feedback{
+    margin-top:8px; padding:8px 12px; border-radius:8px; font-size:13.5px; display:none;
+  }
+  .feedback.show{display:block; animation: slideDown .4s ease both;}
+  .feedback.correct{background:rgba(0,184,148,.15); color:var(--accent2);}
+  .feedback.wrong{background:rgba(224,69,90,.15); color:var(--bad);}
+  #quizScore, #warmupScore{
+    margin-top:10px; font-weight:700; opacity:0;
+  }
+  #quizScore.show, #warmupScore.show{animation: fadeInDown .5s ease forwards;}
+  .data-good, .data-bad{padding:12px 14px; border-radius:12px; font-size:13.5px;}
+  .data-good{background:rgba(0,184,148,.08); border:1px solid rgba(0,184,148,.35);}
+  .data-bad{background:rgba(224,69,90,.08); border:1px solid rgba(224,69,90,.35);}
+  .warmup-box{
+    border:1px dashed var(--border); border-radius:14px; padding:14px 16px; margin:12px 0;
+    background:var(--bg);
+  }
+  .warmup-box h4{margin:0 0 8px; font-size:14.5px;}
+  .fillblank{
+    padding:9px 12px; border-radius:10px; border:1px solid var(--border);
+    background:var(--bg2); color:var(--text); font-size:14px; width:220px; max-width:100%;
+  }
+  select.matchsel{
+    padding:8px 10px; border-radius:8px; border:1px solid var(--border);
+    background:var(--bg2); color:var(--text); font-size:13.5px;
+  }
+  .match-row{display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin:6px 0;}
+  footer{text-align:center; margin-top:30px; font-size:12.5px; color:var(--muted);}
+
+  @keyframes fadeInDown{
+    from{opacity:0; transform:translateY(-16px);}
+    to{opacity:1; transform:translateY(0);}
+  }
+  @keyframes slideUp{
+    from{opacity:0; transform:translateY(18px);}
+    to{opacity:1; transform:translateY(0);}
+  }
+  @keyframes slideDown{
+    from{opacity:0; transform:translateY(-8px);}
+    to{opacity:1; transform:translateY(0);}
+  }
+  @keyframes pulse{
+    0%,100%{transform:scale(1);}
+    50%{transform:scale(1.05);}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="topbar">
+    <span class="muted" style="font-size:13px;">Claude-lession · AI/ML Tiếng Việt</span>
+    <button class="toggle" onclick="toggleTheme()">🌙 / ☀️ Đổi giao diện</button>
+  </div>
+
+  <header class="hero">
+    <span class="badge">SUPERVISED LEARNING — PROBABILISTIC CLASSIFIER</span>
+    <h1>📧 Naive Bayes: Bộ Lọc Spam "Ngây Thơ" Mà Cực Hiệu Quả</h1>
+    <p>Không cần đường biên phức tạp, không cần khoảng cách — chỉ cần đếm xác suất từng từ xuất hiện trong Spam/Ham rồi nhân lại. Vì sao "ngây thơ" mà vẫn hiệu quả? Zero-frequency problem là gì? Có demo tính tay + quiz tự chấm.</p>
+  </header>
+
+  <!-- KHỞI ĐỘNG NHANH -->
+  <section>
+    <h2><span class="num">0</span> Khởi động nhanh (60 giây)</h2>
+    <p class="muted">Trả lời nhanh 3 câu dưới đây trước khi học — không cần đúng hết, chỉ để "hâm nóng" não bạn.</p>
+
+    <div class="warmup-box">
+      <h4>1️⃣ Trắc nghiệm nhanh</h4>
+      <p>Naive Bayes dự đoán nhãn của một email mới bằng cách nào?</p>
+      <label class="quiz-opt"><input type="radio" name="w1" value="wrong">Học một đường biên tuyến tính bằng gradient descent rồi áp dụng</label>
+      <label class="quiz-opt"><input type="radio" name="w1" value="right">Tính P(lớp) × Π P(từ | lớp) cho từng lớp (Spam, Ham), rồi chọn lớp có xác suất posterior cao nhất</label>
+      <label class="quiz-opt"><input type="radio" name="w1" value="wrong">Tìm k email gần nhất trong tập train rồi bỏ phiếu đa số</label>
+    </div>
+
+    <div class="warmup-box">
+      <h4>2️⃣ Điền khuyết</h4>
+      <p>Naive Bayes được gọi là "ngây thơ" (naive) vì nó giả định các đặc trưng (ví dụ: các từ trong email) <b>______</b> với nhau khi đã biết trước nhãn lớp — dù thực tế các từ thường liên quan chặt chẽ (VD "khuyến" hay đi cùng "mãi").</p>
+      <input class="fillblank" type="text" id="w2input" placeholder="Nhập từ khoá...">
+    </div>
+
+    <div class="warmup-box">
+      <h4>3️⃣ Đối chiếu với bản mẫu</h4>
+      <p>Ghép mỗi kỹ thuật với hệ quả của nó:</p>
+      <div class="match-row">Không dùng Laplace Smoothing →
+        <select class="matchsel" id="m1">
+          <option value="">-- chọn --</option>
+          <option value="zero">Có thể ra Posterior = 0 (Zero-frequency problem)</option>
+          <option value="safe">Posterior luôn dương, so sánh được</option>
+        </select>
+      </div>
+      <div class="match-row">Có dùng Laplace Smoothing (add-1) →
+        <select class="matchsel" id="m2">
+          <option value="">-- chọn --</option>
+          <option value="zero">Có thể ra Posterior = 0 (Zero-frequency problem)</option>
+          <option value="safe">Posterior luôn dương, so sánh được</option>
+        </select>
+      </div>
+    </div>
+
+    <button class="btn" onclick="checkWarmup()">✅ Kiểm tra khởi động</button>
+    <div id="warmupScore"></div>
+  </section>
+
+  <!-- 1. ĐỊNH NGHĨA -->
+  <section>
+    <h2><span class="num">1</span> Định nghĩa ngắn gọn</h2>
+    <p><b>Naive Bayes</b> là thuật toán phân loại <b>xác suất</b>, dựa trên <b>Định lý Bayes</b> với giả định "ngây thơ" rằng các đặc trưng (features) <b>độc lập</b> với nhau khi đã biết nhãn lớp. Để dự đoán, ta so sánh xác suất hậu nghiệm (posterior) giữa các lớp bằng công thức:</p>
+    <div class="ascii">        P(y | x) ∝ P(y) × P(x₁|y) × P(x₂|y) × ... × P(xₙ|y)
+
+ Email mới ─▶ Tách thành các "tín hiệu" từ khoá (có/không xuất hiện)
+                              │
+                              ▼
+      Với mỗi lớp y ∈ {Spam, Ham}:
+        Posterior(y) ∝ P(y) × P(w₁|y) × P(w₂|y) × ... × P(wₙ|y)
+                              │
+                              ▼
+             So sánh Posterior(Spam) vs Posterior(Ham)
+                              │
+                              ▼
+                Lớp có Posterior cao hơn ──▶ Dự đoán</div>
+    <p class="muted">Không có ranh giới hình học nào được vẽ ra — "mô hình" chỉ là một bảng xác suất: mỗi từ khoá xuất hiện bao nhiêu % trong email Spam và bao nhiêu % trong email Ham.</p>
+  </section>
+
+  <!-- 2. BÀI TOÁN THỰC TẾ -->
+  <section>
+    <h2><span class="num">2</span> Bài toán thực tế: Lọc email Spam 📧</h2>
+    <p>Hộp thư cần tự động phân loại <b>Spam hay Ham (email bình thường)</b> chỉ dựa vào việc email có chứa 6 từ khoá sau hay không: <code class="inline">khuyến mãi</code>, <code class="inline">miễn phí</code>, <code class="inline">trúng thưởng</code>, <code class="inline">họp</code>, <code class="inline">báo cáo</code>, <code class="inline">deadline</code>.</p>
+    <table>
+      <thead><tr><th>Email</th><th>khuyến mãi</th><th>miễn phí</th><th>trúng thưởng</th><th>họp</th><th>báo cáo</th><th>deadline</th><th>Nhãn thật</th></tr></thead>
+      <tbody>
+        <tr><td>S1</td><td>1</td><td>1</td><td>1</td><td>0</td><td>0</td><td>0</td><td>🚫 Spam</td></tr>
+        <tr><td>S2</td><td>0</td><td>1</td><td>1</td><td>0</td><td>0</td><td>0</td><td>🚫 Spam</td></tr>
+        <tr><td>S3</td><td>1</td><td>0</td><td>1</td><td>0</td><td>0</td><td>0</td><td>🚫 Spam</td></tr>
+        <tr><td>S4</td><td>1</td><td>1</td><td>0</td><td>0</td><td>0</td><td>0</td><td>🚫 Spam</td></tr>
+        <tr><td>H1</td><td>0</td><td>0</td><td>0</td><td>1</td><td>1</td><td>0</td><td>✅ Ham</td></tr>
+        <tr><td>H2</td><td>0</td><td>0</td><td>0</td><td>0</td><td>1</td><td>1</td><td>✅ Ham</td></tr>
+        <tr><td>H3</td><td>0</td><td>0</td><td>0</td><td>1</td><td>0</td><td>1</td><td>✅ Ham</td></tr>
+        <tr><td>H4</td><td>0</td><td>0</td><td>0</td><td>0</td><td>1</td><td>0</td><td>✅ Ham</td></tr>
+      </tbody>
+    </table>
+    <p class="muted">Từ bảng này: P(Spam) = P(Ham) = 4/8 = 0.5 (prior cân bằng). Trong 4 email Spam, "khuyến mãi" xuất hiện 3 lần → P(khuyến mãi | Spam) = 3/4 = 0.75. Trong 4 email Ham, "khuyến mãi" xuất hiện <b>0 lần</b> → P(khuyến mãi | Ham) = 0/4 = 0. Đây chính là hạt giống của "Zero-frequency problem" ở Trạng thái 1 bên dưới.</p>
+  </section>
+
+  <!-- 3. 4 TRẠNG THÁI -->
+  <section>
+    <h2><span class="num">3</span> 4 trạng thái khi dùng Naive Bayes</h2>
+    <p class="muted">Cùng 8 email trên, cách tính xác suất và chất lượng dữ liệu khác nhau cho kết quả rất khác nhau:</p>
+
+    <!-- State 1 -->
+    <div class="state-card">
+      <h3>💥 Trạng thái 1 — Không Laplace Smoothing (Zero-frequency problem) <span class="pill bad">❌ Xấu</span></h3>
+      <div class="ascii">  Email mới: "khuyến mãi báo cáo" (km=1, bc=1, còn lại=0)
+
+  P(Spam) ∝ 0.5 × P(km|Spam) × P(bc|Spam)
+          = 0.5 ×   0.75     ×    0/4=0     = 0   ← "báo cáo" chưa từng có trong Spam!
+
+  P(Ham)  ∝ 0.5 × P(km|Ham)  × P(bc|Ham)
+          = 0.5 ×   0/4=0    ×    0.75      = 0   ← "khuyến mãi" chưa từng có trong Ham!
+
+  → CẢ HAI đều = 0. Mô hình "câm nín", không thể phân biệt được lớp nào hợp lý hơn,
+    dù các bằng chứng còn lại rất rõ ràng (0.75 rất cao!). Chỉ 1 từ lạ đã phá sập cả phép tính.</div>
+      <pre># SAI: xác suất thô không có smoothing
+p_word_given_class = count_word_in_class / total_docs_in_class
+# Nếu 1 từ trong email mới chưa từng xuất hiện ở 1 lớp trong lúc train
+# → p = 0 → toàn bộ tích số (product) của lớp đó = 0, bất kể các từ khác nói gì</pre>
+      <p class="muted">Đây gọi là <b>Zero-frequency problem</b>: chỉ cần <b>một</b> từ chưa từng gặp trong dữ liệu train của một lớp là toàn bộ posterior của lớp đó sụp đổ về 0 — bất công với những bằng chứng mạnh mẽ khác đang ủng hộ lớp đó.</p>
+    </div>
+
+    <!-- State 2 -->
+    <div class="state-card">
+      <h3>✅ Trạng thái 2 — Có Laplace Smoothing (add-1) <span class="pill good">✅ Tốt</span></h3>
+      <div class="ascii">  Công thức mới: P(w|y) = (đếm(w, y) + 1) / (N_y + V)   với V = số từ khoá trong "từ điển" = 6
+
+  P(km|Spam) = (3+1)/(4+6) = 0.40      P(km|Ham) = (0+1)/(4+6) = 0.10  ← không còn = 0!
+  P(bc|Spam) = (0+1)/(4+6) = 0.10      P(bc|Ham) = (3+1)/(4+6) = 0.40
+
+  Email "khuyến mãi báo cáo":
+  P(Spam) ∝ 0.5 × 0.40 × 0.10 = 0.020
+  P(Ham)  ∝ 0.5 × 0.10 × 0.40 = 0.020
+  → Hoà 50/50 — hợp lý! Email có đúng 1 tín hiệu Spam + 1 tín hiệu Ham thì đúng là mập mờ thật.</div>
+      <pre>from sklearn.naive_bayes import BernoulliNB
+model = BernoulliNB(alpha=1.0)   # alpha=1.0 chính là Laplace (add-1) smoothing
+model.fit(X_train, y_train)
+pred = model.predict(X_new)</pre>
+      <p class="muted">Laplace smoothing "cấy" thêm 1 lượt đếm ảo cho mọi từ ở mọi lớp, đảm bảo <b>không xác suất nào bằng 0 tuyệt đối</b> — chỉ tiến gần 0 khi bằng chứng thực sự yếu, chứ không sụp đổ hoàn toàn chỉ vì thiếu dữ liệu train.</p>
+    </div>
+
+    <!-- State 3 -->
+    <div class="state-card">
+      <h3>🌡️ Trạng thái 3 — Nhân trực tiếp xác suất, không dùng log (Numerical Underflow) <span class="pill ok">⚠️ Trung bình</span></h3>
+      <div class="ascii">  Email dài 40 từ, mỗi P(wᵢ|y) ≈ 0.1 (rất bình thường với dữ liệu thực):
+
+  Nhân trực tiếp:  0.1 × 0.1 × 0.1 × ... (40 lần) = 10⁻⁴⁰
+  → Trên máy tính thực, số càng nhỏ càng dễ "tràn dưới" (underflow) về đúng 0.0
+  → Hai lớp Spam/Ham có thể CÙNG bị làm tròn về 0.0 → không so sánh được nữa!
+
+  Dùng LOG thay vì nhân trực tiếp (kết quả toán học tương đương vì log đơn điệu tăng):
+  log P(y|x) = log P(y) + Σ log P(wᵢ|y)
+  log(10⁻⁴⁰) = -40 × log(10) ≈ -92.1   ← số này máy tính xử lý ổn định, không bị làm tròn về 0</div>
+      <pre># Rủi ro: nhân liên tiếp nhiều số nhỏ
+prob = prior
+for w in words: prob *= p_word_given_class[w]   # dễ underflow khi email dài
+
+# An toàn: cộng log-probability rồi so sánh (không cần expo lại)
+import math
+log_prob = math.log(prior)
+for w in words: log_prob += math.log(p_word_given_class[w])
+# so sánh log_prob giữa các lớp — lớp nào lớn hơn thì thắng, y hệt so sánh xác suất gốc</pre>
+      <p class="muted">Với email ngắn (vài từ) thì nhân trực tiếp vẫn ổn, nhưng dữ liệu thực tế (email dài, hàng chục nghìn tài liệu) luôn dùng <b>log-probability</b> để tránh mất độ chính xác do giới hạn số học của máy tính.</p>
+    </div>
+
+    <!-- State 4 -->
+    <div class="state-card">
+      <h3>⚖️ Trạng thái 4 — Dữ liệu huấn luyện mất cân bằng nặng (Imbalanced prior) <span class="pill bad">❌ Xấu</span></h3>
+      <div class="ascii">  Hộp thư thực tế: 995 Ham / 5 Spam (rất mất cân bằng, khác hẳn ví dụ 4/4 ở trên)
+
+  P(Spam) = 5/1000   = 0.005      P(Ham) = 995/1000 = 0.995
+  Prior Ham LỚN GẤP 199 LẦN prior Spam ngay từ đầu, TRƯỚC KHI xét đến bất kỳ từ nào!
+
+  Email có vài tín hiệu spam vừa phải (likelihood_spam gấp đôi likelihood_ham)
+  vẫn có thể thua vì: 0.005 × (2×L) < 0.995 × L
+  → Prior quá lệch "nhấn chìm" bằng chứng, dễ bỏ lọt Spam thật (false negative).</div>
+      <pre># Nếu không xử lý, model học đúng theo tỉ lệ lệch của dữ liệu thật
+model = BernoulliNB(alpha=1.0).fit(X_train, y_train)   # prior mặc định = tỉ lệ lớp trong train
+
+# Cách giảm thiểu: ép prior cân bằng thủ công, hoặc cân bằng lại dữ liệu train (oversample Spam)
+model = BernoulliNB(alpha=1.0, class_prior=[0.5, 0.5]).fit(X_train, y_train)</pre>
+      <p class="muted">Naive Bayes tin tưởng tuyệt đối vào tỉ lệ lớp quan sát được trong dữ liệu train (prior). Nếu Spam hiếm hơn Ham rất nhiều trong tập train, model sẽ "thiên vị" đoán Ham trừ khi bằng chứng ủng hộ Spam cực kỳ áp đảo.</p>
+    </div>
+  </section>
+
+  <!-- BẢNG SO SÁNH -->
+  <section>
+    <h2><span class="num">4</span> Bảng so sánh tổng hợp</h2>
+    <table>
+      <thead><tr><th>Trạng Thái</th><th>Input</th><th>Xử Lý</th><th>Output</th><th>Đánh Giá</th></tr></thead>
+      <tbody>
+        <tr><td>Không Laplace Smoothing</td><td>Email chứa từ chưa từng gặp ở 1 lớp trong train</td><td>P(từ|lớp) = 0 → nhân vào tích số</td><td>Posterior = 0, mất khả năng so sánh</td><td class="grade-bad">❌ Sụp đổ hoàn toàn</td></tr>
+        <tr><td>Có Laplace Smoothing (add-1)</td><td>Cùng email trên</td><td>P(từ|lớp) = (đếm+1)/(N+V) &gt; 0</td><td>Posterior luôn dương, so sánh hợp lý</td><td class="grade-good">✅ Đúng đắn</td></tr>
+        <tr><td>Nhân trực tiếp (không log)</td><td>Email dài (~40 từ)</td><td>Nhân liên tiếp nhiều số &lt;1</td><td>Có thể underflow về 0.0 trên máy thực</td><td class="grade-ok">⚠️ Rủi ro số học</td></tr>
+        <tr><td>Dữ liệu mất cân bằng (5 Spam/995 Ham)</td><td>Email có vài tín hiệu spam vừa phải</td><td>Prior Ham lấn át likelihood</td><td>Dễ đoán nhầm Spam thành Ham</td><td class="grade-bad">❌ False negative cao</td></tr>
+      </tbody>
+    </table>
+    <p class="muted">💡 <b>Bài học:</b> Naive Bayes cực nhanh và cực đơn giản, nhưng <b>luôn cần Laplace smoothing</b> (không phải tuỳ chọn), nên tính bằng <b>log-probability</b> khi dữ liệu lớn, và phải cẩn trọng khi tập train <b>mất cân bằng lớp</b> — 3 điều này quyết định model "ngây thơ" có dùng được trong thực tế hay không.</p>
+  </section>
+
+  <!-- DEMO TƯƠNG TÁC -->
+  <section>
+    <h2><span class="num">5</span> Demo: Tính tay từng bước Naive Bayes</h2>
+    <p class="muted">Tick các từ khoá xuất hiện trong email mới, chọn có/không dùng Laplace Smoothing, bấm <b>Chạy Demo</b> để xem Naive Bayes tính P(Spam) và P(Ham) từng bước dựa trên 8 email huấn luyện ở Mục 2.</p>
+
+    <div class="checkgrid">
+      <label><input type="checkbox" id="w-km" checked> khuyến mãi</label>
+      <label><input type="checkbox" id="w-mp"> miễn phí</label>
+      <label><input type="checkbox" id="w-tt"> trúng thưởng</label>
+      <label><input type="checkbox" id="w-hop"> họp</label>
+      <label><input type="checkbox" id="w-bc" checked> báo cáo</label>
+      <label><input type="checkbox" id="w-dl"> deadline</label>
+    </div>
+
+    <div class="radio-row">
+      <label><input type="radio" name="smoothMode" value="off"> Không Laplace Smoothing</label>
+      <label><input type="radio" name="smoothMode" value="on" checked> Có Laplace Smoothing (add-1)</label>
+    </div>
+
+    <button class="btn" onclick="runDemo()">▶ Chạy Demo</button>
+    <button class="btn secondary" onclick="randomDemo()">🎲 Email ngẫu nhiên</button>
+    <div id="stepBox"></div>
+    <div id="resultBadge"></div>
+  </section>
+
+  <!-- DỮ LIỆU TỐT vs XẤU -->
+  <section>
+    <h2><span class="num">6</span> Dữ liệu tốt vs dữ liệu xấu</h2>
+    <div class="grid2">
+      <div class="data-good">
+        <b>✅ Dữ liệu tốt</b>
+        <ul>
+          <li>Đủ số lượng email mỗi lớp để mọi từ khoá quan trọng đều xuất hiện ít nhất vài lần (tránh count=0 quá nhiều)</li>
+          <li>Luôn bật Laplace/add-alpha smoothing khi huấn luyện, kể cả khi dữ liệu "có vẻ đủ"</li>
+          <li>Tỉ lệ Spam/Ham trong tập train phản ánh đúng (hoặc được cân bằng lại có chủ đích) thực tế sử dụng</li>
+          <li>VD: 5.000 email, cân bằng lại Spam/Ham ~50/50 khi train, kèm log-probability khi tính toán</li>
+        </ul>
+      </div>
+      <div class="data-bad">
+        <b>❌ Dữ liệu xấu</b>
+        <ul>
+          <li>Từ khoá quan trọng chỉ xuất hiện ở 1 lớp trong toàn bộ tập train → chắc chắn dính zero-frequency nếu quên smoothing</li>
+          <li>Dữ liệu quá ít (vài chục email) → mọi ước lượng P(từ|lớp) đều rất nhiễu, không đáng tin</li>
+          <li>Mất cân bằng cực đoan (995 Ham/5 Spam) mà không xử lý prior → model gần như luôn đoán Ham</li>
+          <li>Email rất dài, code tính xác suất nhân trực tiếp không dùng log → kết quả có thể sai do underflow</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- BÀI TẬP + QUIZ -->
+  <section>
+    <h2><span class="num">7</span> Bài tập nhỏ</h2>
+    <p>Cho email mới chỉ chứa từ <b>"trúng thưởng"</b> (các từ khác đều không có). Hãy tự tính bằng tay P(Spam) và P(Ham) <b>không dùng smoothing</b>, dựa vào bảng dữ liệu ở Mục 2 (gợi ý: P(trúng thưởng|Ham) = 0/4) — rồi nhập vào Demo phía trên để kiểm tra lại kết quả.</p>
+
+    <h2 style="margin-top:26px;"><span class="num">?</span> Quiz tự kiểm tra</h2>
+
+    <div class="quiz-q">
+      <p><b>Câu 1.</b> Vì sao Naive Bayes được gọi là "ngây thơ" (naive)?</p>
+      <label class="quiz-opt"><input type="radio" name="q1" value="wrong">Vì thuật toán quá đơn giản nên độ chính xác luôn thấp</label>
+      <label class="quiz-opt"><input type="radio" name="q1" value="right">Vì nó giả định các đặc trưng (từ khoá) độc lập với nhau khi biết trước nhãn lớp, dù thực tế chúng thường liên quan tới nhau</label>
+      <label class="quiz-opt"><input type="radio" name="q1" value="wrong">Vì nó chỉ hoạt động với dữ liệu có đúng 2 lớp</label>
+      <div class="feedback" id="fb-q1"></div>
+    </div>
+
+    <div class="quiz-q">
+      <p><b>Câu 2.</b> Zero-frequency problem xảy ra khi nào, và cách khắc phục phổ biến nhất là gì?</p>
+      <label class="quiz-opt"><input type="radio" name="q2" value="wrong">Khi dữ liệu quá nhiều — khắc phục bằng cách giảm số lượng mẫu train</label>
+      <label class="quiz-opt"><input type="radio" name="q2" value="right">Khi một từ trong dữ liệu mới chưa từng xuất hiện ở một lớp lúc train, khiến P=0 và làm cả tích số về 0 — khắc phục bằng Laplace (add-1) smoothing</label>
+      <label class="quiz-opt"><input type="radio" name="q2" value="wrong">Khi email quá ngắn — khắc phục bằng cách viết email dài hơn</label>
+      <div class="feedback" id="fb-q2"></div>
+    </div>
+
+    <div class="quiz-q">
+      <p><b>Câu 3.</b> Vì sao nên tính bằng log-probability thay vì nhân trực tiếp nhiều xác suất nhỏ?</p>
+      <label class="quiz-opt"><input type="radio" name="q3" value="wrong">Vì log giúp xác suất luôn chính xác hơn 100%</label>
+      <label class="quiz-opt"><input type="radio" name="q3" value="right">Vì nhân liên tiếp nhiều số nhỏ hơn 1 dễ gây numerical underflow (làm tròn về 0) khi tài liệu dài — cộng log-probability tránh được vấn đề này mà kết quả so sánh vẫn tương đương</label>
+      <label class="quiz-opt"><input type="radio" name="q3" value="wrong">Vì scikit-learn bắt buộc phải dùng log, không có cách nào khác</label>
+      <div class="feedback" id="fb-q3"></div>
+    </div>
+
+    <button class="btn" onclick="checkQuiz()">✅ Chấm điểm</button>
+    <div id="quizScore"></div>
+  </section>
+
+  <footer>
+    Claude-lession · Bài giảng AI/ML tiếng Việt tự động · Chủ đề tham khảo từ khóa học <i>AI For Beginners</i>.
+  </footer>
+</div>
+
+<script>
+function toggleTheme(){
+  const root = document.documentElement;
+  const cur = root.getAttribute('data-theme');
+  root.setAttribute('data-theme', cur === 'dark' ? 'light' : 'dark');
+  try{ localStorage.setItem('lesson-theme', root.getAttribute('data-theme')); }catch(e){}
+}
+(function initTheme(){
+  try{
+    const saved = localStorage.getItem('lesson-theme');
+    if(saved){ document.documentElement.setAttribute('data-theme', saved); }
+    else if(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches){
+      document.documentElement.setAttribute('data-theme','dark');
+    }
+  }catch(e){}
+})();
+
+function checkWarmup(){
+  let score = 0, total = 4;
+  const box = document.getElementById('warmupScore');
+
+  const w1 = document.querySelector('input[name="w1"]:checked');
+  if(w1 && w1.value === 'right') score++;
+
+  const w2 = (document.getElementById('w2input').value || '').trim().toLowerCase();
+  if(w2.includes('doc lap') || w2.includes('độc lập') || w2.includes('doc  lap') || w2.includes('independent')) score++;
+
+  const m1 = document.getElementById('m1').value;
+  const m2 = document.getElementById('m2').value;
+  if(m1 === 'zero') score++;
+  if(m2 === 'safe') score++;
+
+  box.textContent = `Khởi động xong: ${score}/${total} đúng — ` +
+    (score >= 3 ? '🔥 Trực giác tốt, vào bài chính thôi!' : '👍 Chưa sao, đọc kỹ Trạng thái 1-2 bên dưới nhé.');
+  box.className = 'show';
+}
+
+// Dữ liệu huấn luyện: đếm số email chứa mỗi từ khoá theo lớp (từ bảng Mục 2)
+const WORDS = [
+  {key:'km', label:'khuyến mãi'},
+  {key:'mp', label:'miễn phí'},
+  {key:'tt', label:'trúng thưởng'},
+  {key:'hop', label:'họp'},
+  {key:'bc', label:'báo cáo'},
+  {key:'dl', label:'deadline'},
+];
+const COUNT_SPAM = {km:3, mp:3, tt:3, hop:0, bc:0, dl:0};
+const COUNT_HAM  = {km:0, mp:0, tt:0, hop:2, bc:3, dl:2};
+const N_SPAM = 4, N_HAM = 4, V = WORDS.length;
+const PRIOR_SPAM = N_SPAM / (N_SPAM + N_HAM);
+const PRIOR_HAM  = N_HAM  / (N_SPAM + N_HAM);
+
+function pWordGivenClass(count, N, smoothing){
+  return smoothing ? (count + 1) / (N + V) : count / N;
+}
+
+function runDemo(){
+  const smoothing = document.querySelector('input[name="smoothMode"]:checked').value === 'on';
+  const picked = WORDS.filter(w => document.getElementById('w-' + w.key).checked);
+
+  const box = document.getElementById('stepBox');
+  box.innerHTML = '';
+
+  const header = document.createElement('div');
+  header.className = 'step-row';
+  header.textContent = `Email mới chứa: ${picked.length ? picked.map(w=>w.label).join(', ') : '(không từ khoá nào)'} — Smoothing: ${smoothing ? 'CÓ (Laplace add-1)' : 'KHÔNG'}`;
+  box.appendChild(header);
+  setTimeout(() => header.classList.add('show'), 0);
+
+  let prodSpam = PRIOR_SPAM, prodHam = PRIOR_HAM;
+  let spamZeroed = false, hamZeroed = false;
+  let i = 0;
+
+  const priorRow = document.createElement('div');
+  priorRow.className = 'step-row';
+  priorRow.textContent = `Prior: P(Spam)=${PRIOR_SPAM.toFixed(3)}  |  P(Ham)=${PRIOR_HAM.toFixed(3)}`;
+  box.appendChild(priorRow);
+  setTimeout(() => priorRow.classList.add('show'), (++i) * 220);
+
+  picked.forEach(w => {
+    const pS = pWordGivenClass(COUNT_SPAM[w.key], N_SPAM, smoothing);
+    const pH = pWordGivenClass(COUNT_HAM[w.key], N_HAM, smoothing);
+    prodSpam *= pS; prodHam *= pH;
+    if(pS === 0) spamZeroed = true;
+    if(pH === 0) hamZeroed = true;
+
+    const div = document.createElement('div');
+    div.className = 'step-row' + ((pS===0||pH===0) ? ' zero' : '');
+    div.textContent = `"${w.label}": P(w|Spam)=${pS.toFixed(3)}${pS===0?' ⚠️ ZERO':''}   P(w|Ham)=${pH.toFixed(3)}${pH===0?' ⚠️ ZERO':''}`;
+    box.appendChild(div);
+    setTimeout(() => div.classList.add('show'), (++i) * 220);
+  });
+
+  const resRow = document.createElement('div');
+  resRow.className = 'step-row win';
+  resRow.textContent = `Posterior (chưa chuẩn hoá): Spam=${prodSpam.toExponential(3)}   Ham=${prodHam.toExponential(3)}`;
+  box.appendChild(resRow);
+  setTimeout(() => resRow.classList.add('show'), (++i) * 220);
+
+  const badge = document.getElementById('resultBadge');
+  badge.className = '';
+  setTimeout(() => {
+    if(prodSpam === 0 && prodHam === 0){
+      badge.textContent = `💥 CẢ HAI = 0 — Zero-frequency problem! Bật "Có Laplace Smoothing" để khắc phục.`;
+      badge.className = 'ok-ok show';
+    } else if(prodSpam > prodHam){
+      const total = prodSpam + prodHam;
+      badge.textContent = `🚫 DỰ ĐOÁN: SPAM (${(prodSpam/total*100).toFixed(1)}% vs ${(prodHam/total*100).toFixed(1)}%)`;
+      badge.className = 'ok-bad show';
+    } else if(prodHam > prodSpam){
+      const total = prodSpam + prodHam;
+      badge.textContent = `✅ DỰ ĐOÁN: HAM (${(prodHam/total*100).toFixed(1)}% vs ${(prodSpam/total*100).toFixed(1)}%)`;
+      badge.className = 'ok-good show';
+    } else {
+      badge.textContent = `🟡 HOÀ (${prodSpam.toExponential(3)} = ${prodHam.toExponential(3)}) — bằng chứng mập mờ giữa 2 lớp`;
+      badge.className = 'ok-ok show';
+    }
+  }, (i+1) * 220 + 200);
+}
+
+function randomDemo(){
+  WORDS.forEach(w => {
+    document.getElementById('w-' + w.key).checked = Math.random() < 0.4;
+  });
+  const smoothRadios = document.querySelectorAll('input[name="smoothMode"]');
+  smoothRadios[Math.floor(Math.random()*smoothRadios.length)].checked = true;
+  runDemo();
+}
+
+const ANSWERS = {q1:'right', q2:'right', q3:'right'};
+function checkQuiz(){
+  let score = 0;
+  Object.keys(ANSWERS).forEach(q => {
+    const chosen = document.querySelector(`input[name="${q}"]:checked`);
+    const fb = document.getElementById('fb-' + q);
+    fb.classList.remove('correct','wrong');
+    if(!chosen){
+      fb.textContent = '⚠️ Bạn chưa chọn đáp án cho câu này.';
+      fb.classList.add('wrong','show');
+      return;
+    }
+    if(chosen.value === 'right'){
+      score++;
+      fb.textContent = '✅ Chính xác!';
+      fb.classList.add('correct','show');
+    } else {
+      fb.textContent = '❌ Chưa đúng, xem lại phần Trạng thái ở trên nhé.';
+      fb.classList.add('wrong','show');
+    }
+  });
+  const scoreBox = document.getElementById('quizScore');
+  scoreBox.textContent = `Điểm của bạn: ${score}/3`;
+  scoreBox.className = 'show';
+}
+</script>
+</body>
+</html>

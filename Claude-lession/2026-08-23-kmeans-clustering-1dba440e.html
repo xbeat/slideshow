@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>K-Means Clustering — Tìm Nhóm Trong Dữ Liệu Không Nhãn</title>
+<style>
+  :root{
+    --bg:#f6f7fb; --bg-card:#ffffff; --text:#1c2130; --text-dim:#5b6376;
+    --border:#e2e5ee; --accent:#6c5ce7; --accent-2:#00b894; --warn:#fdcb6e;
+    --bad:#ff6b6b; --good:#00b894; --mid:#fdcb6e;
+    --code-bg:#282c3b; --code-text:#e6e6e6; --shadow:0 8px 24px rgba(30,34,60,.08);
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --bg:#12141c; --bg-card:#1b1e2b; --text:#eef0f6; --text-dim:#9aa1b5;
+      --border:#2b2f42; --accent:#a29bfe; --accent-2:#55efc4; --warn:#ffe08a;
+      --bad:#ff8787; --good:#55efc4; --mid:#ffe08a;
+      --code-bg:#0e1017; --code-text:#d9dce6; --shadow:0 8px 24px rgba(0,0,0,.4);
+    }
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; font-family:-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    background:var(--bg); color:var(--text); line-height:1.65; padding-bottom:60px;
+  }
+  .wrap{max-width:920px; margin:0 auto; padding:0 20px;}
+  header.hero{
+    padding:56px 20px 40px; text-align:center; background:
+      radial-gradient(circle at 20% 20%, rgba(108,92,231,.18), transparent 45%),
+      radial-gradient(circle at 80% 0%, rgba(0,184,148,.15), transparent 40%);
+    animation:fadeInDown .7s ease both;
+  }
+  header.hero .badge{
+    display:inline-block; padding:5px 14px; border-radius:999px; font-size:.78rem;
+    background:var(--accent); color:#fff; margin-bottom:14px; letter-spacing:.03em;
+  }
+  header.hero h1{font-size:clamp(1.6rem,4vw,2.4rem); margin:0 0 10px;}
+  header.hero p{color:var(--text-dim); max-width:640px; margin:0 auto;}
+
+  @keyframes fadeInDown{from{opacity:0; transform:translateY(-18px);} to{opacity:1; transform:translateY(0);}}
+  @keyframes slideUp{from{opacity:0; transform:translateY(24px);} to{opacity:1; transform:translateY(0);}}
+  @keyframes slideDown{from{opacity:0; transform:translateY(-14px);} to{opacity:1; transform:translateY(0);}}
+  @keyframes pulse{0%,100%{transform:scale(1);} 50%{transform:scale(1.06);}}
+  @keyframes dash{to{stroke-dashoffset:0;}}
+
+  section{margin:34px 0;}
+  .card{
+    background:var(--bg-card); border:1px solid var(--border); border-radius:16px;
+    padding:24px; box-shadow:var(--shadow); animation:slideUp .6s ease both;
+  }
+  h2{font-size:1.35rem; margin:0 0 14px; display:flex; align-items:center; gap:10px;}
+  h2 .num{
+    width:30px; height:30px; border-radius:9px; background:var(--accent); color:#fff;
+    display:flex; align-items:center; justify-content:center; font-size:.9rem; flex-shrink:0;
+  }
+  h3{font-size:1.05rem; margin:22px 0 8px;}
+  code, pre{font-family:"SF Mono",Consolas,Menlo,monospace;}
+  pre{
+    background:var(--code-bg); color:var(--code-text); padding:16px; border-radius:10px;
+    overflow-x:auto; font-size:.85rem; line-height:1.55;
+  }
+  code.inline{background:var(--code-bg); color:var(--code-text); padding:2px 6px; border-radius:5px; font-size:.85em;}
+
+  table{width:100%; border-collapse:collapse; margin:14px 0; font-size:.92rem;}
+  th,td{border:1px solid var(--border); padding:10px 12px; text-align:left; vertical-align:top;}
+  th{background:var(--bg); font-weight:600;}
+  .ok{color:var(--good); font-weight:600;}
+  .warn{color:var(--mid); font-weight:600;}
+  .bad{color:var(--bad); font-weight:600;}
+
+  .ascii{
+    background:var(--code-bg); color:var(--code-text); border-radius:10px; padding:16px;
+    font-family:"SF Mono",Consolas,Menlo,monospace; font-size:.82rem; overflow-x:auto;
+    white-space:pre; line-height:1.5;
+  }
+
+  .flow{display:flex; flex-wrap:wrap; align-items:center; gap:8px; justify-content:center; margin:18px 0;}
+  .flow .step{
+    background:var(--bg); border:1px solid var(--border); border-radius:10px; padding:10px 14px;
+    font-size:.85rem; text-align:center; min-width:110px;
+  }
+  .flow .step.active{border-color:var(--accent); animation:pulse 1.4s ease infinite; color:var(--accent); font-weight:700;}
+  .flow .arrow{color:var(--accent); font-size:1.3rem; animation:pulse 1.6s ease infinite;}
+
+  .demo-grid{display:grid; grid-template-columns:1fr; gap:18px;}
+  @media(min-width:640px){.demo-grid{grid-template-columns:2fr 1fr;}}
+  canvas{width:100%; height:auto; background:var(--bg); border:1px solid var(--border); border-radius:12px; display:block;}
+  .controls{display:flex; flex-direction:column; gap:10px;}
+  .btn-row{display:flex; flex-wrap:wrap; gap:8px;}
+  button{
+    cursor:pointer; border:none; border-radius:9px; padding:10px 16px; font-size:.88rem;
+    font-weight:600; background:var(--accent); color:#fff; transition:transform .15s ease, opacity .15s ease;
+  }
+  button:hover{opacity:.88;}
+  button:active{transform:scale(.96);}
+  button.secondary{background:var(--bg); color:var(--text); border:1px solid var(--border);}
+  button.k-btn.selected{background:var(--accent-2); color:#0b1f19;}
+  .stat-box{
+    background:var(--bg); border:1px solid var(--border); border-radius:10px; padding:12px 14px; font-size:.88rem;
+  }
+  .stat-box b{color:var(--accent);}
+  #stepLabel{font-weight:700; animation:slideDown .4s ease both;}
+
+  .bars{display:flex; align-items:flex-end; gap:10px; height:160px; padding:10px 4px 0;}
+  .bar{flex:1; display:flex; flex-direction:column; align-items:center; justify-content:flex-end; gap:6px;}
+  .bar .col{width:100%; border-radius:6px 6px 0 0; background:var(--accent); transition:height .5s ease;}
+  .bar.elbow .col{background:var(--good);}
+  .bar span{font-size:.72rem; color:var(--text-dim);}
+
+  .quiz-q{margin-bottom:20px; padding-bottom:16px; border-bottom:1px dashed var(--border);}
+  .quiz-q label{display:block; padding:8px 10px; border-radius:8px; cursor:pointer; margin:4px 0;}
+  .quiz-q label:hover{background:var(--bg);}
+  .quiz-q input{margin-right:8px;}
+  .quiz-q .fb{display:none; margin-top:8px; padding:10px; border-radius:8px; font-size:.86rem; animation:slideDown .35s ease both;}
+  .quiz-q .fb.show{display:block;}
+  .quiz-q .fb.correct{background:rgba(0,184,148,.15); color:var(--good);}
+  .quiz-q .fb.wrong{background:rgba(255,107,107,.15); color:var(--bad);}
+  #quizScore{margin-top:12px; font-weight:700; animation:slideDown .4s ease both;}
+
+  footer{text-align:center; color:var(--text-dim); font-size:.82rem; margin-top:50px;}
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <span class="badge">🎲 Bài ngẫu nhiên · AI-For-Beginners · Unsupervised Learning</span>
+  <h1>K-Means Clustering</h1>
+  <p>Làm sao máy tính "tự" chia khách hàng, ảnh, hay văn bản thành từng nhóm — mà không ai gán nhãn trước? Hôm nay ta mổ xẻ thuật toán phân cụm phổ biến nhất: <b>K-Means</b>.</p>
+</header>
+
+<div class="wrap">
+
+<section class="card">
+  <h2><span class="num">1</span>Định nghĩa ngắn gọn</h2>
+  <p>K-Means là thuật toán <b>học không giám sát (unsupervised)</b>: chia <code class="inline">N</code> điểm dữ liệu thành <code class="inline">K</code> cụm sao cho các điểm trong cùng cụm càng "gần" tâm cụm của nó càng tốt.</p>
+  <pre>J = Σ (với mỗi cụm k) Σ (với mỗi điểm x trong cụm k) ||x − centroid_k||²
+
+→ Mục tiêu: tìm K tâm cụm để tổng bình phương khoảng cách này nhỏ nhất</pre>
+  <p>Khác với hồi quy/phân loại, K-Means <b>không cần nhãn (label)</b> — nó chỉ nhìn vào độ "gần nhau" giữa các điểm.</p>
+</section>
+
+<section class="card">
+  <h2><span class="num">2</span>4 trạng thái của thuật toán (State Trace)</h2>
+  <p>K-Means chạy lặp qua 2 bước cho đến khi hội tụ. Theo dõi trạng thái dữ liệu qua từng bước:</p>
+
+  <div class="ascii" id="asciiTrace">
+Bước 0 — KHỞI TẠO (random init)
+  Chọn ngẫu nhiên K tâm cụm giữa các điểm.
+  [ x  x  x    x  x  x    x  x  x ]     ★1        ★2        ★3
+   (chưa gán nhóm cho điểm nào, tâm đặt bừa)
+
+Bước 1 — GÁN NHÃN (Assignment / E-step)
+  Mỗi điểm x → tính khoảng cách tới 3 tâm → gán vào tâm GẦN NHẤT
+  x → min(d(x,★1), d(x,★2), d(x,★3)) → gán nhãn cụm tương ứng
+  [ x✓1 x✓1 x✓2 | x✓2 x✓3 x✓1 | x✓3 x✓3 x✓2 ]   (nhãn tạm, có thể còn sai)
+
+Bước 2 — CẬP NHẬT TÂM (Update / M-step)
+  Tâm mới = trung bình cộng toạ độ các điểm thuộc cụm đó
+  ★1_new = mean(các điểm gán nhãn 1)   ...tương tự ★2, ★3
+  ★1 dịch chuyển →→→ vị trí trung tâm thật của nhóm
+
+Bước 3 — HỘI TỤ (Convergence)
+  Lặp lại Bước 1–2. Khi tâm cụm KHÔNG còn đổi vị trí → dừng.
+  [ CỤM A ✓✓✓ ]   [ CỤM B ✓✓✓ ]   [ CỤM C ✓✓✓ ]   ✅ ổn định
+  </div>
+
+  <table>
+    <tr><th>Trạng Thái</th><th>Input</th><th>Xử Lý</th><th>Output</th><th>Đánh Giá</th></tr>
+    <tr>
+      <td>0. Khởi tạo</td><td>N điểm dữ liệu chưa gán nhãn</td>
+      <td>Chọn ngẫu nhiên K điểm làm tâm ban đầu</td>
+      <td>K tâm cụm "bừa"</td><td class="warn">⚠️ May rủi, ảnh hưởng kết quả cuối</td>
+    </tr>
+    <tr>
+      <td>1. Gán nhãn (E-step)</td><td>N điểm + K tâm hiện tại</td>
+      <td>Mỗi điểm chọn tâm gần nhất (Euclidean distance)</td>
+      <td>Nhãn cụm cho từng điểm</td><td class="warn">⚠️ Nhãn tạm, chưa chắc đúng</td>
+    </tr>
+    <tr>
+      <td>2. Cập nhật (M-step)</td><td>Các điểm đã gán nhãn</td>
+      <td>Tính trung bình cộng toạ độ mỗi cụm</td>
+      <td>K tâm cụm mới</td><td class="warn">⚠️ Tâm dịch dần về đúng vị trí</td>
+    </tr>
+    <tr>
+      <td>3. Hội tụ</td><td>Lặp bước 1↔2</td>
+      <td>So sánh tâm cũ vs tâm mới</td>
+      <td>Tâm không đổi nữa</td><td class="ok">✅ Cụm ổn định, dùng được</td>
+    </tr>
+  </table>
+
+  <div class="flow" id="flowDiagram">
+    <div class="step" id="f0">Khởi tạo</div>
+    <div class="arrow">➜</div>
+    <div class="step" id="f1">Gán nhãn</div>
+    <div class="arrow">➜</div>
+    <div class="step" id="f2">Cập nhật tâm</div>
+    <div class="arrow">↺</div>
+    <div class="step" id="f3">Hội tụ ✅</div>
+  </div>
+
+  <pre>from sklearn.cluster import KMeans
+
+# X: mảng shape (N, 2) — vd [chi_tieu_thang, so_lan_mua]
+model = KMeans(n_clusters=3, init="k-means++", n_init=10, random_state=42)
+model.fit(X)
+
+print(model.labels_)        # nhãn cụm cho từng điểm
+print(model.cluster_centers_)  # toạ độ K tâm cụm cuối cùng
+print(model.inertia_)       # J — tổng bình phương khoảng cách (càng nhỏ càng "chặt")</pre>
+</section>
+
+<section class="card">
+  <h2><span class="num">3</span>Demo tương tác: tự tay chạy K-Means</h2>
+  <p>Dữ liệu bên dưới mô phỏng <b>phân khúc khách hàng</b>: trục ngang = tần suất mua hàng/tháng, trục dọc = chi tiêu trung bình/tháng. Bấm <b>"Bước tiếp theo"</b> để xem thuật toán chạy từng nhịp.</p>
+
+  <div class="demo-grid">
+    <canvas id="kmCanvas" width="560" height="420"></canvas>
+    <div class="controls">
+      <div class="stat-box">Trạng thái: <span id="stepLabel">Chưa bắt đầu</span></div>
+      <div class="stat-box">Vòng lặp: <b id="iterCount">0</b></div>
+      <div class="stat-box">Sai số J (inertia): <b id="inertiaVal">—</b></div>
+      <div class="btn-row">
+        <button id="stepBtn">▶ Bước tiếp theo</button>
+        <button class="secondary" id="resetBtn">↺ Reset (tâm mới)</button>
+      </div>
+      <div class="btn-row">
+        <span style="font-size:.82rem;color:var(--text-dim);align-self:center;">Chọn K:</span>
+        <button class="secondary k-btn" data-k="2">K=2</button>
+        <button class="secondary k-btn selected" data-k="3">K=3</button>
+        <button class="secondary k-btn" data-k="4">K=4</button>
+        <button class="secondary k-btn" data-k="6">K=6</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="card">
+  <h2><span class="num">4</span>Chọn K bao nhiêu là đủ? — Elbow Method</h2>
+  <p>K càng lớn thì J càng nhỏ (mỗi điểm gần tâm riêng của nó hơn) — nhưng K quá lớn thì cụm mất ý nghĩa. Ta tìm điểm "khuỷu tay" (elbow) — nơi J ngừng giảm mạnh.</p>
+  <div class="bars" id="elbowChart"></div>
+  <table>
+    <tr><th>K</th><th>Inertia (J)</th><th>Nhận xét</th><th>Đánh giá</th></tr>
+    <tr><td>1</td><td>4200</td><td>Gộp hết vào 1 cụm — vô nghĩa</td><td class="bad">❌ Underfit</td></tr>
+    <tr><td>2</td><td>2100</td><td>J giảm mạnh</td><td class="warn">⚠️ Còn thô</td></tr>
+    <tr><td>3</td><td>980</td><td>J giảm mạnh — <b>điểm khuỷu tay</b></td><td class="ok">✅ Tối ưu</td></tr>
+    <tr><td>4</td><td>860</td><td>Giảm chậm lại rõ rệt</td><td class="warn">⚠️ Lợi ích nhỏ dần</td></tr>
+    <tr><td>6</td><td>700</td><td>J nhỏ nhưng cụm bị chia vụn, trùng lặp</td><td class="bad">❌ Overfit cụm</td></tr>
+  </table>
+</section>
+
+<section class="card">
+  <h2><span class="num">5</span>Dữ liệu tốt vs dữ liệu xấu</h2>
+  <table>
+    <tr><th>Trạng Thái</th><th>Input</th><th>Xử Lý</th><th>Output</th><th>Đánh Giá</th></tr>
+    <tr>
+      <td>Đã chuẩn hoá (scaled)</td>
+      <td>chi tiêu (0–20 triệu), số lần mua (0–30) → StandardScaler</td>
+      <td>Khoảng cách Euclidean công bằng giữa 2 trục</td>
+      <td>Cụm phản ánh đúng hành vi khách hàng</td>
+      <td class="ok">✅ Tốt</td>
+    </tr>
+    <tr>
+      <td>Chưa chuẩn hoá (raw scale)</td>
+      <td>chi tiêu tính bằng VNĐ (hàng triệu) trộn với số lần mua (hàng chục)</td>
+      <td>Trục "chi tiêu" áp đảo hoàn toàn khoảng cách</td>
+      <td>Cụm chỉ phản ánh chi tiêu, bỏ qua tần suất mua</td>
+      <td class="bad">❌ Sai lệch</td>
+    </tr>
+    <tr>
+      <td>Đã lọc outlier</td>
+      <td>Loại khách hàng lỗi nhập liệu (chi 999 triệu/tháng)</td>
+      <td>Tâm cụm không bị kéo lệch</td>
+      <td>Cụm gọn, đại diện đúng số đông</td>
+      <td class="ok">✅ Tốt</td>
+    </tr>
+    <tr>
+      <td>Còn outlier</td>
+      <td>Giữ nguyên điểm dữ liệu lỗi/bất thường</td>
+      <td>1 điểm outlier kéo tâm cụm ra xa cả nhóm</td>
+      <td>Cụm méo, không đại diện cho ai cả</td>
+      <td class="bad">❌ Xấu</td>
+    </tr>
+  </table>
+  <pre>from sklearn.preprocessing import StandardScaler
+
+# ❌ Xấu: dùng thẳng dữ liệu thô
+model.fit(X)  # trục "chi tiêu" (triệu đồng) sẽ lấn át trục "số lần mua"
+
+# ✅ Tốt: chuẩn hoá trước khi phân cụm
+X_scaled = StandardScaler().fit_transform(X)
+model.fit(X_scaled)</pre>
+</section>
+
+<section class="card">
+  <h2><span class="num">6</span>Ứng dụng thực tế</h2>
+  <ul>
+    <li><b>Phân khúc khách hàng:</b> chia khách hàng thành VIP / trung bình / vãng lai để chạy chiến dịch marketing riêng.</li>
+    <li><b>Nén ảnh (image compression):</b> gom hàng triệu màu pixel về K màu đại diện.</li>
+    <li><b>Phát hiện bất thường:</b> điểm nằm xa mọi tâm cụm → nghi ngờ gian lận giao dịch.</li>
+    <li><b>Gợi ý sản phẩm:</b> gom nhóm người dùng có hành vi mua sắm giống nhau.</li>
+  </ul>
+</section>
+
+<section class="card">
+  <h2><span class="num">7</span>Bài tập nhỏ</h2>
+  <p>Cho 6 điểm dữ liệu (giờ học/tuần, điểm thi): <code class="inline">(2,4), (3,5), (8,7), (9,8), (2,5), (9,6)</code>. Với <b>K=2</b>, khởi tạo tâm ban đầu là điểm (2,4) và (9,8):</p>
+  <ol>
+    <li>Gán mỗi điểm còn lại vào tâm gần nhất (E-step) — tự tính bằng tay hoặc dùng demo phía trên với K=2.</li>
+    <li>Tính lại tâm mới bằng trung bình cộng mỗi cụm (M-step).</li>
+    <li>Nhận xét: 2 cụm này có thể đại diện cho nhóm nào (VD: "chăm học điểm cao" vs "ít học điểm thấp")?</li>
+  </ol>
+</section>
+
+<section class="card">
+  <h2><span class="num">8</span>Quiz tự kiểm tra</h2>
+  <div id="quiz">
+    <div class="quiz-q" data-correct="b">
+      <p><b>1. K-Means thuộc loại học nào?</b></p>
+      <label><input type="radio" name="q1" value="a">Supervised (có nhãn)</label>
+      <label><input type="radio" name="q1" value="b">Unsupervised (không nhãn)</label>
+      <label><input type="radio" name="q1" value="c">Reinforcement Learning</label>
+      <div class="fb"></div>
+    </div>
+    <div class="quiz-q" data-correct="c">
+      <p><b>2. Tâm cụm mới ở bước "Update" được tính bằng cách nào?</b></p>
+      <label><input type="radio" name="q2" value="a">Chọn điểm gần trung tâm hình học nhất</label>
+      <label><input type="radio" name="q2" value="b">Giữ nguyên tâm cũ</label>
+      <label><input type="radio" name="q2" value="c">Trung bình cộng toạ độ các điểm trong cụm</label>
+      <div class="fb"></div>
+    </div>
+    <div class="quiz-q" data-correct="a">
+      <p><b>3. Vì sao cần chuẩn hoá (scale) dữ liệu trước khi chạy K-Means?</b></p>
+      <label><input type="radio" name="q3" value="a">Để các trục có đơn vị khác nhau không áp đảo khoảng cách</label>
+      <label><input type="radio" name="q3" value="b">Để thuật toán chạy nhanh hơn</label>
+      <label><input type="radio" name="q3" value="c">Không cần thiết, K-Means tự động scale</label>
+      <div class="fb"></div>
+    </div>
+    <div class="quiz-q" data-correct="b">
+      <p><b>4. Phương pháp Elbow dùng để làm gì?</b></p>
+      <label><input type="radio" name="q4" value="a">Tăng tốc độ hội tụ của thuật toán</label>
+      <label><input type="radio" name="q4" value="b">Chọn số cụm K hợp lý</label>
+      <label><input type="radio" name="q4" value="c">Loại bỏ outlier khỏi dữ liệu</label>
+      <div class="fb"></div>
+    </div>
+    <div class="quiz-q" data-correct="a">
+      <p><b>5. Khởi tạo tâm cụm ngẫu nhiên khác nhau có thể dẫn đến điều gì?</b></p>
+      <label><input type="radio" name="q5" value="a">Kết quả phân cụm cuối cùng khác nhau (local optimum)</label>
+      <label><input type="radio" name="q5" value="b">Luôn ra kết quả giống hệt nhau</label>
+      <label><input type="radio" name="q5" value="c">Không ảnh hưởng gì vì K-Means là thuật toán tất định</label>
+      <div class="fb"></div>
+    </div>
+  </div>
+  <button id="checkQuizBtn">✔ Chấm điểm</button>
+  <div id="quizScore"></div>
+</section>
+
+<footer>Bài giảng tự động — AI-For-Beginners, phần Unsupervised Learning · K-Means Clustering</footer>
+</div>
+
+<script>
+// ---------- Demo K-Means tương tác ----------
+const rawPoints = [
+  {x:80,y:85},{x:85,y:78},{x:78,y:88},{x:90,y:82},{x:82,y:90},{x:88,y:75},
+  {x:45,y:50},{x:50,y:45},{x:42,y:55},{x:55,y:48},{x:48,y:52},{x:52,y:42},
+  {x:15,y:20},{x:20,y:15},{x:12,y:25},{x:25,y:18},{x:18,y:22},{x:22,y:12},
+  {x:60,y:20},{x:65,y:15},{x:30,y:80},{x:35,y:75},{x:70,y:65},{x:25,y:55}
+];
+const colors = ["#6c5ce7","#00b894","#e17055","#0984e3","#fd79a8","#fdcb6e"];
+
+let K = 3, centroids = [], assignments = new Array(rawPoints.length).fill(-1);
+let iter = 0, phase = "init"; // init -> assigned -> updated -> converged
+
+const canvas = document.getElementById("kmCanvas");
+const ctx = canvas.getContext("2d");
+const PAD = 30, W = canvas.width, H = canvas.height;
+
+function toPx(v, axis){
+  if(axis==="x") return PAD + (v/100)*(W-2*PAD);
+  return H-PAD - (v/100)*(H-2*PAD);
+}
+
+function pickRandomCentroids(k){
+  const idx = new Set();
+  while(idx.size < k) idx.add(Math.floor(Math.random()*rawPoints.length));
+  return [...idx].map(i => ({x:rawPoints[i].x, y:rawPoints[i].y}));
+}
+
+function dist(a,b){ return Math.hypot(a.x-b.x, a.y-b.y); }
+
+function assignStep(){
+  assignments = rawPoints.map(p=>{
+    let best=0, bd=Infinity;
+    centroids.forEach((c,i)=>{ const d=dist(p,c); if(d<bd){bd=d; best=i;} });
+    return best;
+  });
+}
+
+function updateStep(){
+  let changed = false;
+  const newC = centroids.map((c,i)=>{
+    const pts = rawPoints.filter((_,j)=>assignments[j]===i);
+    if(pts.length===0) return c;
+    const mx = pts.reduce((s,p)=>s+p.x,0)/pts.length;
+    const my = pts.reduce((s,p)=>s+p.y,0)/pts.length;
+    if(Math.hypot(mx-c.x, my-c.y) > 0.5) changed = true;
+    return {x:mx, y:my};
+  });
+  centroids = newC;
+  return changed;
+}
+
+function inertia(){
+  return rawPoints.reduce((s,p,i)=> s + Math.pow(dist(p, centroids[assignments[i]]),2), 0);
+}
+
+function draw(){
+  ctx.clearRect(0,0,W,H);
+  ctx.strokeStyle = getComputedStyle(document.body).getPropertyValue('--border') || "#ccc";
+  ctx.lineWidth = 1;
+  ctx.strokeRect(PAD,PAD,W-2*PAD,H-2*PAD);
+  ctx.font = "11px sans-serif";
+  ctx.fillStyle = getComputedStyle(document.body).getPropertyValue('--text') || "#333";
+  ctx.fillText("→ Tần suất mua/tháng", W-140, H-8);
+  ctx.save();
+  ctx.translate(10, PAD+20); ctx.rotate(-Math.PI/2);
+  ctx.fillText("Chi tiêu TB/tháng ↑", 0, 0);
+  ctx.restore();
+
+  rawPoints.forEach((p,i)=>{
+    const px = toPx(p.x,"x"), py = toPx(p.y,"y");
+    ctx.beginPath();
+    ctx.arc(px,py,7,0,Math.PI*2);
+    ctx.fillStyle = assignments[i]>=0 ? colors[assignments[i]%colors.length] : "#999";
+    ctx.globalAlpha = 0.85;
+    ctx.fill();
+    ctx.globalAlpha = 1;
+  });
+
+  centroids.forEach((c,i)=>{
+    const px=toPx(c.x,"x"), py=toPx(c.y,"y");
+    ctx.beginPath();
+    ctx.moveTo(px-9,py); ctx.lineTo(px+9,py);
+    ctx.moveTo(px,py-9); ctx.lineTo(px,py+9);
+    ctx.strokeStyle = colors[i%colors.length];
+    ctx.lineWidth = 3;
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(px,py,12,0,Math.PI*2);
+    ctx.strokeStyle = colors[i%colors.length];
+    ctx.lineWidth = 2;
+    ctx.stroke();
+  });
+}
+
+function updateFlowUI(){
+  ["f0","f1","f2","f3"].forEach(id=>document.getElementById(id).classList.remove("active"));
+  const map = {init:"f0", assigned:"f1", updated:"f2", converged:"f3"};
+  document.getElementById(map[phase]).classList.add("active");
+  const labels = {init:"Khởi tạo — chưa gán nhãn", assigned:"Gán nhãn (E-step)", updated:"Cập nhật tâm (M-step)", converged:"Hội tụ ✅ đã ổn định"};
+  document.getElementById("stepLabel").textContent = labels[phase];
+  document.getElementById("stepLabel").style.animation = "none";
+  void document.getElementById("stepLabel").offsetWidth;
+  document.getElementById("stepLabel").style.animation = "slideDown .4s ease both";
+  document.getElementById("iterCount").textContent = iter;
+  document.getElementById("inertiaVal").textContent = assignments.some(a=>a>=0) ? inertia().toFixed(1) : "—";
+}
+
+function resetDemo(){
+  centroids = pickRandomCentroids(K);
+  assignments = new Array(rawPoints.length).fill(-1);
+  iter = 0; phase = "init";
+  draw(); updateFlowUI();
+}
+
+document.getElementById("stepBtn").addEventListener("click", ()=>{
+  if(phase==="init" || phase==="updated"){
+    assignStep(); phase="assigned";
+  } else if(phase==="assigned"){
+    const changed = updateStep();
+    iter++;
+    phase = changed ? "updated" : "converged";
+  } else if(phase==="converged"){
+    return;
+  }
+  draw(); updateFlowUI();
+});
+
+document.getElementById("resetBtn").addEventListener("click", resetDemo);
+
+document.querySelectorAll(".k-btn").forEach(btn=>{
+  btn.addEventListener("click", ()=>{
+    document.querySelectorAll(".k-btn").forEach(b=>b.classList.remove("selected"));
+    btn.classList.add("selected");
+    K = parseInt(btn.dataset.k, 10);
+    resetDemo();
+  });
+});
+
+resetDemo();
+
+// ---------- Elbow chart ----------
+const elbowData = [
+  {k:1, j:4200}, {k:2, j:2100}, {k:3, j:980, elbow:true}, {k:4, j:860}, {k:6, j:700}
+];
+const maxJ = Math.max(...elbowData.map(d=>d.j));
+const chart = document.getElementById("elbowChart");
+elbowData.forEach(d=>{
+  const bar = document.createElement("div");
+  bar.className = "bar" + (d.elbow ? " elbow" : "");
+  const col = document.createElement("div");
+  col.className = "col";
+  col.style.height = "0px";
+  bar.appendChild(col);
+  const span = document.createElement("span");
+  span.textContent = "K="+d.k;
+  bar.appendChild(span);
+  chart.appendChild(bar);
+  requestAnimationFrame(()=>{ col.style.height = (d.j/maxJ*130)+"px"; });
+});
+
+// ---------- Quiz ----------
+document.getElementById("checkQuizBtn").addEventListener("click", ()=>{
+  const questions = document.querySelectorAll(".quiz-q");
+  let score = 0;
+  questions.forEach(q=>{
+    const correct = q.dataset.correct;
+    const checked = q.querySelector("input:checked");
+    const fb = q.querySelector(".fb");
+    fb.classList.remove("show","correct","wrong");
+    if(!checked){
+      fb.textContent = "⚠️ Bạn chưa chọn đáp án.";
+      fb.classList.add("show","wrong");
+      return;
+    }
+    if(checked.value === correct){
+      score++;
+      fb.textContent = "✅ Chính xác!";
+      fb.classList.add("show","correct");
+    } else {
+      fb.textContent = "❌ Chưa đúng — xem lại phần trên nhé.";
+      fb.classList.add("show","wrong");
+    }
+  });
+  const scoreBox = document.getElementById("quizScore");
+  scoreBox.textContent = `Kết quả: ${score}/${questions.length} câu đúng`;
+  scoreBox.style.animation = "none";
+  void scoreBox.offsetWidth;
+  scoreBox.style.animation = "slideDown .4s ease both";
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Support Vector Machine — Học AI/ML dễ hiểu</title>
+<style>
+  :root{
+    --bg:#f6f7fb; --bg2:#ffffff; --text:#1c1f2b; --muted:#5b6072;
+    --accent:#5b5ff0; --accent2:#00b894; --warn:#f0a500; --bad:#e0455a;
+    --border:#e3e5ef; --card:#ffffff; --code-bg:#1c1f2b; --code-text:#e8eaf6;
+    --shadow: 0 8px 24px rgba(30,32,60,0.08);
+  }
+  [data-theme="dark"]{
+    --bg:#12131c; --bg2:#181a26; --text:#eceefb; --muted:#a2a6c2;
+    --accent:#8b8ffb; --accent2:#3ddc97; --warn:#ffc233; --bad:#ff6b7d;
+    --border:#2a2d40; --card:#1c1e2c; --code-bg:#0d0e16; --code-text:#dfe2f7;
+    --shadow: 0 8px 28px rgba(0,0,0,0.45);
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; font-family:"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+    background:var(--bg); color:var(--text); transition:background .4s ease,color .4s ease;
+    line-height:1.6;
+  }
+  .wrap{max-width:960px; margin:0 auto; padding:20px 16px 80px;}
+  header.hero{
+    text-align:center; padding:36px 20px; border-radius:20px;
+    background:linear-gradient(135deg,var(--accent),#9b8cff);
+    color:#fff; box-shadow:var(--shadow);
+    animation: fadeInDown .7s ease both;
+    position:relative;
+  }
+  header.hero h1{margin:0 0 8px; font-size:clamp(22px,4vw,34px);}
+  header.hero p{margin:0; opacity:.92; font-size:15px;}
+  .topbar{display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:14px;}
+  .badge{
+    display:inline-block; background:rgba(255,255,255,.18); padding:4px 12px;
+    border-radius:999px; font-size:12px; letter-spacing:.5px; margin-bottom:10px;
+  }
+  button.toggle{
+    background:var(--card); color:var(--text); border:1px solid var(--border);
+    padding:8px 14px; border-radius:999px; cursor:pointer; font-size:13px;
+    box-shadow:var(--shadow); transition:transform .25s ease, background .3s ease;
+  }
+  button.toggle:hover{transform:translateY(-2px);}
+  section{
+    background:var(--card); border:1px solid var(--border); border-radius:16px;
+    padding:22px 20px; margin-top:22px; box-shadow:var(--shadow);
+    animation: slideUp .6s ease both;
+  }
+  section h2{margin-top:0; font-size:20px; display:flex; align-items:center; gap:8px;}
+  section h2 .num{
+    background:var(--accent); color:#fff; width:28px; height:28px; border-radius:50%;
+    display:inline-flex; align-items:center; justify-content:center; font-size:14px; flex:none;
+  }
+  p{color:var(--text);}
+  .muted{color:var(--muted);}
+  code, pre{font-family:"Fira Code",Consolas,monospace;}
+  pre{
+    background:var(--code-bg); color:var(--code-text); padding:14px 16px; border-radius:12px;
+    overflow-x:auto; font-size:13px; line-height:1.55;
+  }
+  code.inline{background:var(--code-bg); color:var(--code-text); padding:2px 6px; border-radius:6px; font-size:.9em;}
+  table{width:100%; border-collapse:collapse; margin:12px 0; font-size:14px; overflow-x:auto; display:block;}
+  table thead, table tbody{width:100%;}
+  th,td{border:1px solid var(--border); padding:8px 10px; text-align:left; vertical-align:top;}
+  th{background:var(--bg); color:var(--muted); font-weight:600;}
+  .grade-good{color:var(--accent2); font-weight:700;}
+  .grade-ok{color:var(--warn); font-weight:700;}
+  .grade-bad{color:var(--bad); font-weight:700;}
+  .state-card{
+    border:1px dashed var(--border); border-radius:14px; padding:16px; margin:14px 0;
+    background:var(--bg); animation: slideUp .5s ease both;
+  }
+  .state-card h3{margin:0 0 6px; font-size:16px; display:flex; align-items:center; gap:8px; flex-wrap:wrap;}
+  .pill{font-size:11px; padding:3px 10px; border-radius:999px; font-weight:700;}
+  .pill.good{background:rgba(0,184,148,.15); color:var(--accent2);}
+  .pill.ok{background:rgba(240,165,0,.15); color:var(--warn);}
+  .pill.bad{background:rgba(224,69,90,.15); color:var(--bad);}
+  .ascii{
+    background:var(--code-bg); color:var(--code-text); padding:14px; border-radius:12px;
+    font-family:"Fira Code",Consolas,monospace; font-size:12.5px; white-space:pre; overflow-x:auto;
+  }
+  .grid2{display:grid; grid-template-columns:1fr; gap:14px;}
+  @media(min-width:720px){.grid2{grid-template-columns:1fr 1fr;}}
+  .demo-box{display:flex; flex-wrap:wrap; gap:10px; margin:14px 0;}
+  .demo-box label{display:flex; flex-direction:column; font-size:13px; color:var(--muted); gap:6px; flex:1; min-width:150px;}
+  .demo-box input, .demo-box select{
+    padding:10px 12px; border-radius:10px; border:1px solid var(--border);
+    background:var(--bg2); color:var(--text); font-size:14px;
+  }
+  .checkgrid{display:grid; grid-template-columns:repeat(2,1fr); gap:8px; margin:12px 0;}
+  @media(min-width:600px){.checkgrid{grid-template-columns:repeat(3,1fr);}}
+  .checkgrid label{
+    display:flex; align-items:center; gap:8px; padding:9px 10px; border-radius:10px;
+    border:1px solid var(--border); background:var(--bg2); font-size:13.5px; cursor:pointer;
+    transition:background .25s ease;
+  }
+  .checkgrid label:hover{background:var(--bg);}
+  .checkgrid input{accent-color:var(--accent);}
+  .radio-row{display:flex; gap:14px; flex-wrap:wrap; margin:10px 0;}
+  .radio-row label{display:flex; align-items:center; gap:6px; font-size:13.5px; cursor:pointer;}
+  .radio-row input{accent-color:var(--accent);}
+  .btn{
+    background:var(--accent); color:#fff; border:none; padding:11px 20px; border-radius:10px;
+    font-size:14px; cursor:pointer; font-weight:600; transition:transform .25s ease, box-shadow .25s ease;
+  }
+  .btn:hover{transform:translateY(-2px); box-shadow:0 6px 16px rgba(91,95,240,.35);}
+  .btn.secondary{background:var(--accent2);}
+  #stepBox{margin-top:14px; display:grid; grid-template-columns:1fr; gap:6px;}
+  .step-row{
+    padding:9px 12px; border-left:3px solid var(--border); border-radius:8px;
+    background:var(--bg); opacity:0; transform:translateY(6px); font-size:13px;
+    font-family:"Fira Code",Consolas,monospace;
+  }
+  .step-row.win{border-left-color:var(--accent2);}
+  .step-row.zero{border-left-color:var(--bad);}
+  .step-row.show{animation: slideDown .4s ease forwards;}
+  .pulse{animation: pulse 1s ease infinite;}
+  #resultBadge{
+    display:inline-block; margin-top:14px; padding:10px 18px; border-radius:12px; font-weight:700;
+    opacity:0;
+  }
+  #resultBadge.show{animation: slideDown .5s ease forwards;}
+  .ok-good{background:rgba(0,184,148,.15); color:var(--accent2);}
+  .ok-bad{background:rgba(224,69,90,.15); color:var(--bad);}
+  .ok-ok{background:rgba(240,165,0,.15); color:var(--warn);}
+  .quiz-q{margin-bottom:18px; padding-bottom:14px; border-bottom:1px dashed var(--border);}
+  .quiz-q:last-child{border-bottom:none;}
+  .quiz-opt{
+    display:flex; align-items:center; gap:8px; padding:8px 10px; border-radius:10px; margin:4px 0;
+    cursor:pointer; border:1px solid transparent; transition:background .25s ease;
+  }
+  .quiz-opt:hover{background:var(--bg);}
+  .quiz-opt input{accent-color:var(--accent);}
+  .feedback{
+    margin-top:8px; padding:8px 12px; border-radius:8px; font-size:13.5px; display:none;
+  }
+  .feedback.show{display:block; animation: slideDown .4s ease both;}
+  .feedback.correct{background:rgba(0,184,148,.15); color:var(--accent2);}
+  .feedback.wrong{background:rgba(224,69,90,.15); color:var(--bad);}
+  #quizScore, #warmupScore{
+    margin-top:10px; font-weight:700; opacity:0;
+  }
+  #quizScore.show, #warmupScore.show{animation: fadeInDown .5s ease forwards;}
+  .data-good, .data-bad{padding:12px 14px; border-radius:12px; font-size:13.5px;}
+  .data-good{background:rgba(0,184,148,.08); border:1px solid rgba(0,184,148,.35);}
+  .data-bad{background:rgba(224,69,90,.08); border:1px solid rgba(224,69,90,.35);}
+  .warmup-box{
+    border:1px dashed var(--border); border-radius:14px; padding:14px 16px; margin:12px 0;
+    background:var(--bg);
+  }
+  .warmup-box h4{margin:0 0 8px; font-size:14.5px;}
+  .fillblank{
+    padding:9px 12px; border-radius:10px; border:1px solid var(--border);
+    background:var(--bg2); color:var(--text); font-size:14px; width:220px; max-width:100%;
+  }
+  select.matchsel{
+    padding:8px 10px; border-radius:8px; border:1px solid var(--border);
+    background:var(--bg2); color:var(--text); font-size:13.5px;
+  }
+  .match-row{display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin:6px 0;}
+  .num-line{
+    position:relative; height:56px; margin:16px 0; border-radius:10px; background:var(--bg2);
+    border:1px solid var(--border); overflow:visible;
+  }
+  .num-dot{
+    position:absolute; top:18px; width:18px; height:18px; border-radius:50%;
+    display:flex; align-items:center; justify-content:center; font-size:10px; font-weight:700; color:#fff;
+    transform:translateX(-50%); box-shadow:0 2px 6px rgba(0,0,0,.25);
+  }
+  .num-dot.paid{background:var(--accent2);}
+  .num-dot.default{background:var(--bad);}
+  .num-line .thr{
+    position:absolute; top:0; bottom:0; width:2px; background:var(--warn);
+    transform:translateX(-50%);
+  }
+  footer{text-align:center; margin-top:30px; font-size:12.5px; color:var(--muted);}
+
+  @keyframes fadeInDown{
+    from{opacity:0; transform:translateY(-16px);}
+    to{opacity:1; transform:translateY(0);}
+  }
+  @keyframes slideUp{
+    from{opacity:0; transform:translateY(18px);}
+    to{opacity:1; transform:translateY(0);}
+  }
+  @keyframes slideDown{
+    from{opacity:0; transform:translateY(-8px);}
+    to{opacity:1; transform:translateY(0);}
+  }
+  @keyframes pulse{
+    0%,100%{transform:scale(1);}
+    50%{transform:scale(1.05);}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="topbar">
+    <span class="muted" style="font-size:13px;">Claude-lession · AI/ML Tiếng Việt</span>
+    <button class="toggle" onclick="toggleTheme()">🌙 / ☀️ Đổi giao diện</button>
+  </div>
+
+  <header class="hero">
+    <span class="badge">SUPERVISED LEARNING — MAXIMUM-MARGIN CLASSIFIER</span>
+    <h1>🛡️ Support Vector Machine: Tìm "Con Đường" Rộng Nhất Để Phân Loại</h1>
+    <p>SVM không chỉ vẽ một đường phân chia — nó tìm đường phân chia có <b>lề (margin)</b> rộng nhất có thể. Nhưng chỉ một khách hàng "nhiễu" cũng đủ khiến Hard-margin SVM sụp đổ. Soft-margin và tham số C giải quyết việc này ra sao? Có demo tính tay + quiz tự chấm.</p>
+  </header>
+
+  <!-- KHỞI ĐỘNG NHANH -->
+  <section>
+    <h2><span class="num">0</span> Khởi động nhanh (60 giây)</h2>
+    <p class="muted">Trả lời nhanh 3 câu dưới đây trước khi học — không cần đúng hết, chỉ để "hâm nóng" não bạn.</p>
+
+    <div class="warmup-box">
+      <h4>1️⃣ Trắc nghiệm nhanh</h4>
+      <p>SVM chọn đường phân chia (hyperplane) dựa trên tiêu chí nào?</p>
+      <label class="quiz-opt"><input type="radio" name="w1" value="wrong">Đường nào đi qua nhiều điểm dữ liệu nhất</label>
+      <label class="quiz-opt"><input type="radio" name="w1" value="right">Đường tạo ra khoảng cách (margin) lớn nhất tới các điểm gần nhất của mỗi lớp</label>
+      <label class="quiz-opt"><input type="radio" name="w1" value="wrong">Đường trung bình cộng toạ độ của toàn bộ điểm trong mỗi lớp</label>
+    </div>
+
+    <div class="warmup-box">
+      <h4>2️⃣ Điền khuyết</h4>
+      <p>Những điểm dữ liệu nằm sát đường phân chia nhất — và là những điểm duy nhất quyết định vị trí của margin — được gọi là <b>______</b>.</p>
+      <input class="fillblank" type="text" id="w2input" placeholder="Nhập từ khoá...">
+    </div>
+
+    <div class="warmup-box">
+      <h4>3️⃣ Đối chiếu với bản mẫu</h4>
+      <p>Ghép mỗi giá trị tham số C với hành vi của mô hình:</p>
+      <div class="match-row">C rất lớn (phạt nặng mọi vi phạm) →
+        <select class="matchsel" id="m1">
+          <option value="">-- chọn --</option>
+          <option value="tight">Margin hẹp, cố "nuông chiều" từng điểm nhiễu → dễ overfit</option>
+          <option value="wide">Margin rộng, chấp nhận bỏ qua điểm nhiễu → tổng quát tốt hơn</option>
+        </select>
+      </div>
+      <div class="match-row">C nhỏ hợp lý (cho phép vi phạm) →
+        <select class="matchsel" id="m2">
+          <option value="">-- chọn --</option>
+          <option value="tight">Margin hẹp, cố "nuông chiều" từng điểm nhiễu → dễ overfit</option>
+          <option value="wide">Margin rộng, chấp nhận bỏ qua điểm nhiễu → tổng quát tốt hơn</option>
+        </select>
+      </div>
+    </div>
+
+    <button class="btn" onclick="checkWarmup()">✅ Kiểm tra khởi động</button>
+    <div id="warmupScore"></div>
+  </section>
+
+  <!-- 1. ĐỊNH NGHĨA -->
+  <section>
+    <h2><span class="num">1</span> Định nghĩa ngắn gọn</h2>
+    <p><b>Support Vector Machine (SVM)</b> là thuật toán phân loại đi tìm siêu phẳng (hyperplane) phân tách 2 lớp sao cho <b>khoảng cách (margin)</b> từ siêu phẳng đến điểm gần nhất của mỗi lớp là <b>lớn nhất</b>. Chỉ những điểm nằm sát biên — gọi là <b>support vector</b> — mới quyết định vị trí của siêu phẳng; các điểm ở xa gần như "vô hình" với mô hình.</p>
+    <div class="ascii">        maximize margin = 2/||w||   sao cho   yᵢ(w·xᵢ + b) ≥ 1  với mọi điểm i
+
+  Dữ liệu ─▶ Tìm w, b sao cho "con đường" quanh siêu phẳng w·x+b=0 rộng nhất
+                              │
+                              ▼
+        Chỉ các điểm SÁT MÉP đường (support vectors) mới ảnh hưởng đến w, b
+                              │
+                              ▼
+      Nếu dữ liệu có nhiễu/outlier không thể tách tuyệt đối:
+      thêm "độ nới lỏng" ξᵢ (slack) + tham số C để phạt vi phạm
+                              │
+                              ▼
+                 Điểm mới ─▶ dấu(w·x + b) ──▶ Dự đoán lớp</div>
+    <p class="muted">Khi dữ liệu không thể tách bằng đường thẳng, SVM còn có "kernel trick" (RBF, polynomial...) để ánh xạ dữ liệu sang không gian nhiều chiều hơn — phần đó nằm ngoài phạm vi bài này, tạm tập trung vào bài toán tuyến tính 1 chiều cho dễ tính tay.</p>
+  </section>
+
+  <!-- 2. BÀI TOÁN THỰC TẾ -->
+  <section>
+    <h2><span class="num">2</span> Bài toán thực tế: Duyệt hồ sơ vay 💳</h2>
+    <p>Ngân hàng chấm <b>điểm rủi ro tín dụng (risk score, 0–100)</b> cho khách vay, điểm càng cao càng dễ vỡ nợ. Chỉ dựa vào <b>1 con số</b> này, SVM cần tìm một <b>ngưỡng (threshold)</b> tách "Trả nợ đúng hạn" khỏi "Vỡ nợ" sao cho khoảng cách an toàn hai bên là lớn nhất.</p>
+    <table>
+      <thead><tr><th>Khách hàng</th><th>Risk score</th><th>Nhãn thật</th></tr></thead>
+      <tbody>
+        <tr><td>A1</td><td>20</td><td>✅ Trả nợ đúng hạn</td></tr>
+        <tr><td>A2</td><td>25</td><td>✅ Trả nợ đúng hạn</td></tr>
+        <tr><td>A3</td><td>30</td><td>✅ Trả nợ đúng hạn</td></tr>
+        <tr><td>A4</td><td>35</td><td>✅ Trả nợ đúng hạn</td></tr>
+        <tr><td>B1</td><td>60</td><td>🚫 Vỡ nợ</td></tr>
+        <tr><td>B2</td><td>65</td><td>🚫 Vỡ nợ</td></tr>
+        <tr><td>B3</td><td>70</td><td>🚫 Vỡ nợ</td></tr>
+        <tr><td>B4</td><td>75</td><td>🚫 Vỡ nợ</td></tr>
+      </tbody>
+    </table>
+    <p class="muted">Với 8 khách hàng "sạch" này, hai điểm gần nhau nhất giữa hai lớp là A4 (35) và B1 (60) — đây chính là <b>support vectors</b>. Ngưỡng tối ưu nằm giữa: b = (35+60)/2 = 47.5, margin = 60−35 = 25 điểm — rất rộng và an toàn.</p>
+  </section>
+
+  <!-- 3. 4 TRẠNG THÁI -->
+  <section>
+    <h2><span class="num">3</span> 4 trạng thái khi dùng SVM</h2>
+    <p class="muted">Giờ thêm 1 khách hàng "nhiễu" B0 = score 22 nhưng nhãn thật là <b>Vỡ nợ</b> (hồ sơ gian lận, điểm rủi ro thấp giả tạo) — xem SVM phản ứng ra sao với 4 cách cấu hình khác nhau:</p>
+
+    <!-- State 1 -->
+    <div class="state-card">
+      <h3>✅ Trạng thái 1 — Hard-margin, dữ liệu sạch (không có B0) <span class="pill good">✅ Tốt</span></h3>
+      <div class="ascii">  A: 20  25  30  35 | 47.5 | 60  65  70  75  :B
+                        ◀───── margin=25 ─────▶
+  Support vectors: A4(35) và B1(60)  →  b = 47.5, w chuẩn hoá sao cho margin=2/||w||=25
+
+  → Toàn bộ 8 điểm được phân loại đúng 100%, margin cực rộng → mô hình rất tự tin
+    và tổng quát tốt cho khách hàng mới có score nằm ngoài khoảng [35,60].</div>
+      <pre>from sklearn.svm import SVC
+model = SVC(kernel='linear', C=1e9)   # C cực lớn ~ hard margin (gần như không cho vi phạm)
+model.fit(X_train, y_train)           # dữ liệu sạch, tách tuyến tính hoàn hảo</pre>
+      <p class="muted">Đây là kịch bản lý tưởng của SVM: dữ liệu tách rõ ràng, margin rộng, support vectors ổn định — đúng như lý thuyết sách giáo khoa.</p>
+    </div>
+
+    <!-- State 2 -->
+    <div class="state-card">
+      <h3>💥 Trạng thái 2 — Hard-margin, có nhiễu B0=22 (Vỡ nợ) <span class="pill bad">❌ Xấu</span></h3>
+      <div class="ascii">  A: 20  22(B0!)  25  30  35  |  60  65  70  75  :B
+         ▲
+      B0 (Vỡ nợ) lọt VÀO GIỮA cụm "Trả nợ đúng hạn" → không còn thứ tự tách được bằng 1 ngưỡng!
+
+  Hard-margin SVM yêu cầu yᵢ(w·xᵢ+b) ≥ 1 cho MỌI điểm, KHÔNG được vi phạm.
+  → Không tồn tại ngưỡng nào thoả mãn cả 9 điểm cùng lúc.
+  → Bài toán tối ưu VÔ NGHIỆM (infeasible) — solver báo lỗi, không huấn luyện được.</div>
+      <pre>model = SVC(kernel='linear', C=1e9)
+model.fit(X_train, y_train)
+# Trên dữ liệu không tách tuyến tính tuyệt đối: hard-margin không hội tụ,
+# hoặc (tuỳ cài đặt) rơi về nghiệm cực đoan, méo mó vì cố ép giải bằng mọi giá</pre>
+      <p class="muted">Chỉ <b>1 điểm nhiễu duy nhất</b> đã đủ phá vỡ toàn bộ giả định "tách tuyệt đối" của Hard-margin SVM. Đây là lý do Hard-margin gần như không dùng được với dữ liệu thực tế — vốn luôn có nhiễu.</p>
+    </div>
+
+    <!-- State 3 -->
+    <div class="state-card">
+      <h3>⚠️ Trạng thái 3 — Soft-margin, C rất lớn, có nhiễu B0 <span class="pill bad">❌ Xấu</span></h3>
+      <div class="ascii">  A: 20 |21(b)  22(B0!)  25  30  35  |  60...75
+         ▲threshold ép sát để "chiều" B0
+
+  C lớn → phạt vi phạm rất nặng → solver cố nhét B0 vào đúng phía Vỡ nợ bằng mọi giá
+  → threshold bị kéo tụt xuống b ≈ 21 (kẹp giữa 20 và 22)
+
+  Hậu quả: A2(25), A3(30), A4(35) giờ đều > 21 → bị dự đoán NHẦM thành "Vỡ nợ"!
+  Đổi 1 điểm nhiễu lấy 3 khách hàng tốt bị từ chối vay oan — cái giá quá đắt.</div>
+      <pre>model = SVC(kernel='linear', C=1000)   # C rất lớn: gần như hard-margin
+model.fit(X_train_with_outlier, y_train_with_outlier)
+# accuracy train có thể "ảo cao" ở vài điểm nhưng méo mó, generalize rất kém</pre>
+      <p class="muted">C lớn khiến SVM ưu tiên "không sai điểm nào" hơn là giữ margin rộng — nó overfit theo đúng điểm nhiễu, đánh đổi bằng việc phân loại sai hàng loạt điểm bình thường xung quanh.</p>
+    </div>
+
+    <!-- State 4 -->
+    <div class="state-card">
+      <h3>✅ Trạng thái 4 — Soft-margin, C hợp lý, có nhiễu B0 <span class="pill good">✅ Tốt</span></h3>
+      <div class="ascii">  A: 20  22(B0!)  25  30  35 | 46(b) |  60  65  70  75
+
+  C vừa phải → chấp nhận "hy sinh" 1 điểm nếu đổi lại giữ được margin rộng cho toàn cục
+  → threshold gần như giữ nguyên vị trí cũ (b ≈ 46, gần 47.5), chỉ B0 bị coi là ngoại lệ (ξ>0)
+
+  Hậu quả: chỉ B0 bị phân loại sai (1/9 điểm) — TẤT CẢ khách hàng thật (A1-A4, B1-B4)
+  vẫn được phân loại đúng. Đây chính xác là điều ta muốn: bỏ qua nhiễu, giữ mô hình ổn định.</div>
+      <pre>model = SVC(kernel='linear', C=1)      # C vừa phải: cho phép vài vi phạm có kiểm soát
+model.fit(X_train_with_outlier, y_train_with_outlier)
+# 1 outlier bị "hy sinh" (soft violation), phần còn lại vẫn phân loại đúng & margin rộng</pre>
+      <p class="muted">Đây là bài học cốt lõi của Soft-margin SVM: chấp nhận vài lỗi nhỏ có kiểm soát (thông qua slack variable ξᵢ và tham số C) để đổi lấy một mô hình <b>ổn định và tổng quát hoá tốt hơn</b> — thay vì cố "học thuộc lòng" từng điểm nhiễu.</p>
+    </div>
+  </section>
+
+  <!-- BẢNG SO SÁNH -->
+  <section>
+    <h2><span class="num">4</span> Bảng so sánh tổng hợp</h2>
+    <table>
+      <thead><tr><th>Trạng Thái</th><th>Input</th><th>Xử Lý</th><th>Output</th><th>Đánh Giá</th></tr></thead>
+      <tbody>
+        <tr><td>Hard-margin, dữ liệu sạch</td><td>8 khách hàng tách rõ</td><td>Tối ưu margin, không cho vi phạm</td><td>b=47.5, margin=25, 0 lỗi</td><td class="grade-good">✅ Lý tưởng</td></tr>
+        <tr><td>Hard-margin, có nhiễu B0</td><td>Thêm B0=22 (Vỡ nợ)</td><td>Yêu cầu tách tuyệt đối cho mọi điểm</td><td>Vô nghiệm (infeasible)</td><td class="grade-bad">❌ Không huấn luyện được</td></tr>
+        <tr><td>Soft-margin, C rất lớn</td><td>Cùng dữ liệu có B0</td><td>Phạt vi phạm cực nặng → ép hợp B0</td><td>b≈21, sai luôn 3 khách hàng tốt</td><td class="grade-bad">❌ Overfit theo nhiễu</td></tr>
+        <tr><td>Soft-margin, C hợp lý</td><td>Cùng dữ liệu có B0</td><td>Cho phép "hy sinh" điểm nhiễu có kiểm soát</td><td>b≈46, chỉ B0 sai, còn lại đúng hết</td><td class="grade-good">✅ Tổng quát tốt</td></tr>
+      </tbody>
+    </table>
+    <p class="muted">💡 <b>Bài học:</b> Hard-margin SVM chỉ hoạt động khi dữ liệu tách tuyệt đối — điều gần như không tồn tại trong thực tế. <b>Soft-margin + tham số C</b> mới là công cụ thực dụng, nhưng C không phải "càng lớn càng chuẩn" — C quá lớn khiến mô hình overfit theo từng điểm nhiễu, cần validation (VD: cross-validation) để chọn C phù hợp.</p>
+  </section>
+
+  <!-- DEMO TƯƠNG TÁC -->
+  <section>
+    <h2><span class="num">5</span> Demo: Tính tay ngưỡng phân loại của SVM</h2>
+    <p class="muted">Bật/tắt khách hàng nhiễu B0, chọn kiểu margin, bấm <b>Chạy Demo</b> để xem SVM (đơn giản hoá 1 chiều) chọn ngưỡng ra sao và bao nhiêu khách hàng bị phân loại sai.</p>
+
+    <div class="checkgrid">
+      <label><input type="checkbox" id="w-outlier" checked> Thêm B0 = score 22, nhãn "Vỡ nợ" (nhiễu)</label>
+    </div>
+
+    <div class="radio-row">
+      <label><input type="radio" name="marginMode" value="hard" checked> Hard-margin (C = ∞, không cho vi phạm)</label>
+      <label><input type="radio" name="marginMode" value="soft_large"> Soft-margin, C rất lớn</label>
+      <label><input type="radio" name="marginMode" value="soft_small"> Soft-margin, C hợp lý</label>
+    </div>
+
+    <button class="btn" onclick="runDemo()">▶ Chạy Demo</button>
+    <button class="btn secondary" onclick="randomDemo()">🎲 Cấu hình ngẫu nhiên</button>
+
+    <div class="num-line" id="numLine"></div>
+    <div id="stepBox"></div>
+    <div id="resultBadge"></div>
+  </section>
+
+  <!-- DỮ LIỆU TỐT vs XẤU -->
+  <section>
+    <h2><span class="num">6</span> Dữ liệu tốt vs dữ liệu xấu</h2>
+    <div class="grid2">
+      <div class="data-good">
+        <b>✅ Dữ liệu tốt</b>
+        <ul>
+          <li>Đã chuẩn hoá (scale) các đặc trưng về cùng khoảng giá trị — SVM rất nhạy với thang đo</li>
+          <li>Được rà soát nhãn để loại bớt lỗi gán nhãn/gian lận trước khi train (giảm outlier "giả")</li>
+          <li>Dùng soft-margin (C hữu hạn) mặc định, và chọn C bằng cross-validation thay vì đoán</li>
+          <li>VD: 10.000 hồ sơ vay đã scale, C được chọn qua grid-search trên tập validation</li>
+        </ul>
+      </div>
+      <div class="data-bad">
+        <b>❌ Dữ liệu xấu</b>
+        <ul>
+          <li>Đặc trưng để nguyên thang đo gốc (VD: thu nhập hàng triệu vs tuổi hàng chục) → margin bị một cột "áp đảo"</li>
+          <li>Ép dùng Hard-margin (C cực lớn) trên dữ liệu thực tế luôn có nhiễu → vô nghiệm hoặc méo mó</li>
+          <li>Chỉ 1-2 điểm nhãn sai lẫn trong tập train nhưng không kiểm tra lại → kéo lệch toàn bộ ngưỡng nếu C quá lớn</li>
+          <li>Chọn C tuỳ hứng, không validation → không biết mô hình đang overfit hay underfit</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- BÀI TẬP + QUIZ -->
+  <section>
+    <h2><span class="num">7</span> Bài tập nhỏ</h2>
+    <p>Giả sử có thêm 1 khách hàng nhiễu thứ hai: score = 73 nhưng nhãn thật là "Trả nợ đúng hạn" (nằm lẫn trong cụm Vỡ nợ). Hãy tự suy luận: nếu dùng <b>Soft-margin C hợp lý</b>, ngưỡng b có nên dịch chuyển mạnh về phía 73 không, hay nên tiếp tục "hy sinh" điểm này giống cách xử lý B0 ở Trạng thái 4? Thử bật thêm B0 trong Demo phía trên và tưởng tượng thêm điểm này để kiểm chứng trực giác.</p>
+
+    <h2 style="margin-top:26px;"><span class="num">?</span> Quiz tự kiểm tra</h2>
+
+    <div class="quiz-q">
+      <p><b>Câu 1.</b> Vì sao chỉ các "support vector" mới quyết định vị trí của siêu phẳng, chứ không phải toàn bộ dữ liệu?</p>
+      <label class="quiz-opt"><input type="radio" name="q1" value="wrong">Vì SVM chỉ đọc được một phần dữ liệu do giới hạn bộ nhớ</label>
+      <label class="quiz-opt"><input type="radio" name="q1" value="right">Vì mục tiêu tối ưu chỉ phụ thuộc vào các điểm nằm sát biên margin — các điểm ở xa đã "chắc chắn đúng lớp" nên không ảnh hưởng đến nghiệm tối ưu</label>
+      <label class="quiz-opt"><input type="radio" name="q1" value="wrong">Vì các điểm ở xa luôn bị coi là nhiễu và bị loại bỏ trước khi train</label>
+      <div class="feedback" id="fb-q1"></div>
+    </div>
+
+    <div class="quiz-q">
+      <p><b>Câu 2.</b> Vì sao Hard-margin SVM thường thất bại (vô nghiệm) trên dữ liệu thực tế?</p>
+      <label class="quiz-opt"><input type="radio" name="q2" value="wrong">Vì Hard-margin chỉ hỗ trợ tối đa 8 điểm dữ liệu</label>
+      <label class="quiz-opt"><input type="radio" name="q2" value="right">Vì nó yêu cầu tách TUYỆT ĐỐI 100% điểm, trong khi dữ liệu thực tế gần như luôn có ít nhất vài điểm nhiễu/gán nhãn sai khiến việc tách tuyệt đối là bất khả thi</label>
+      <label class="quiz-opt"><input type="radio" name="q2" value="wrong">Vì Hard-margin chỉ hoạt động với dữ liệu 2 chiều trở lên</label>
+      <div class="feedback" id="fb-q2"></div>
+    </div>
+
+    <div class="quiz-q">
+      <p><b>Câu 3.</b> Tham số C trong Soft-margin SVM kiểm soát điều gì?</p>
+      <label class="quiz-opt"><input type="radio" name="q3" value="wrong">Số lượng support vector tối đa được phép sử dụng</label>
+      <label class="quiz-opt"><input type="radio" name="q3" value="right">Mức độ "phạt" khi một điểm vi phạm margin/bị phân loại sai — C càng lớn càng ép mô hình cố tránh mọi vi phạm (dễ overfit theo nhiễu), C càng nhỏ càng ưu tiên margin rộng, ổn định</label>
+      <label class="quiz-opt"><input type="radio" name="q3" value="wrong">Số chiều (dimension) của kernel trick</label>
+      <div class="feedback" id="fb-q3"></div>
+    </div>
+
+    <button class="btn" onclick="checkQuiz()">✅ Chấm điểm</button>
+    <div id="quizScore"></div>
+  </section>
+
+  <footer>
+    Claude-lession · Bài giảng AI/ML tiếng Việt tự động · Chủ đề tham khảo từ khóa học <i>AI For Beginners</i>.
+  </footer>
+</div>
+
+<script>
+function toggleTheme(){
+  const root = document.documentElement;
+  const cur = root.getAttribute('data-theme');
+  root.setAttribute('data-theme', cur === 'dark' ? 'light' : 'dark');
+  try{ localStorage.setItem('lesson-theme', root.getAttribute('data-theme')); }catch(e){}
+}
+(function initTheme(){
+  try{
+    const saved = localStorage.getItem('lesson-theme');
+    if(saved){ document.documentElement.setAttribute('data-theme', saved); }
+    else if(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches){
+      document.documentElement.setAttribute('data-theme','dark');
+    }
+  }catch(e){}
+})();
+
+function checkWarmup(){
+  let score = 0, total = 4;
+  const box = document.getElementById('warmupScore');
+
+  const w1 = document.querySelector('input[name="w1"]:checked');
+  if(w1 && w1.value === 'right') score++;
+
+  const w2 = (document.getElementById('w2input').value || '').trim().toLowerCase();
+  if(w2.includes('support vector') || w2.includes('vector ho tro') || w2.includes('vectơ hỗ trợ') || w2.includes('vector ho tro') || w2.includes('vecto ho tro')) score++;
+
+  const m1 = document.getElementById('m1').value;
+  const m2 = document.getElementById('m2').value;
+  if(m1 === 'tight') score++;
+  if(m2 === 'wide') score++;
+
+  box.textContent = `Khởi động xong: ${score}/${total} đúng — ` +
+    (score >= 3 ? '🔥 Trực giác tốt, vào bài chính thôi!' : '👍 Chưa sao, đọc kỹ Trạng thái 1-4 bên dưới nhé.');
+  box.className = 'show';
+}
+
+// Dữ liệu: risk score (0-100), label -1 = Trả nợ đúng hạn, +1 = Vỡ nợ
+const BASE = [
+  {x:20, y:-1, name:'A1'}, {x:25, y:-1, name:'A2'}, {x:30, y:-1, name:'A3'}, {x:35, y:-1, name:'A4'},
+  {x:60, y:1,  name:'B1'}, {x:65, y:1,  name:'B2'}, {x:70, y:1,  name:'B3'}, {x:75, y:1,  name:'B4'},
+];
+const OUTLIER = {x:22, y:1, name:'B0(nhiễu)'};
+
+function labelText(y){ return y === -1 ? 'Trả nợ' : 'Vỡ nợ'; }
+
+function drawNumLine(points, threshold){
+  const line = document.getElementById('numLine');
+  line.innerHTML = '';
+  const min = 10, max = 85;
+  points.forEach(p => {
+    const pct = (p.x - min) / (max - min) * 100;
+    const dot = document.createElement('div');
+    dot.className = 'num-dot ' + (p.y === -1 ? 'paid' : 'default');
+    dot.style.left = pct + '%';
+    dot.title = `${p.name}: score=${p.x} (${labelText(p.y)})`;
+    dot.textContent = p.x;
+    line.appendChild(dot);
+  });
+  if(threshold !== null){
+    const t = document.createElement('div');
+    t.className = 'thr';
+    t.style.left = ((threshold - min) / (max - min) * 100) + '%';
+    line.appendChild(t);
+  }
+}
+
+function runDemo(){
+  const outlierOn = document.getElementById('w-outlier').checked;
+  const mode = document.querySelector('input[name="marginMode"]:checked').value;
+  const points = outlierOn ? BASE.concat([OUTLIER]) : BASE.slice();
+
+  const box = document.getElementById('stepBox');
+  box.innerHTML = '';
+  let i = 0;
+  const addRow = (text, cls) => {
+    const div = document.createElement('div');
+    div.className = 'step-row' + (cls ? ' ' + cls : '');
+    div.textContent = text;
+    box.appendChild(div);
+    setTimeout(() => div.classList.add('show'), (++i) * 220);
+  };
+
+  addRow(`Dữ liệu: ${points.length} khách hàng ${outlierOn ? '(có B0 nhiễu, score=22, nhãn Vỡ nợ)' : '(sạch, không nhiễu)'} — Chế độ: ${mode === 'hard' ? 'Hard-margin' : (mode === 'soft_large' ? 'Soft-margin, C rất lớn' : 'Soft-margin, C hợp lý')}`);
+
+  let threshold = null, infeasible = false;
+
+  if(!outlierOn){
+    threshold = 47.5;
+    addRow(`Support vectors: A4(35) và B1(60) → threshold b = 47.5, margin = 25 (rộng)`, 'win');
+  } else if(mode === 'hard'){
+    infeasible = true;
+    addRow(`B0=22 (Vỡ nợ) lọt vào giữa cụm "Trả nợ" (20-35) → KHÔNG tồn tại ngưỡng đơn nào tách đúng cả 9 điểm`, 'zero');
+  } else if(mode === 'soft_large'){
+    threshold = 21;
+    addRow(`C rất lớn → solver cố "chiều" B0 bằng mọi giá → threshold bị ép xuống b ≈ 21 (kẹp sát B0)`, 'zero');
+  } else {
+    threshold = 46;
+    addRow(`C hợp lý → chấp nhận "hy sinh" B0, giữ threshold gần vị trí gốc → b ≈ 46`, 'win');
+  }
+
+  drawNumLine(points, threshold);
+
+  setTimeout(() => {
+    const badge = document.getElementById('resultBadge');
+    badge.className = '';
+
+    if(infeasible){
+      badge.textContent = `💥 VÔ NGHIỆM — Hard-margin SVM không thể huấn luyện khi dữ liệu có nhiễu. Hãy thử Soft-margin.`;
+      badge.className = 'ok-ok show';
+      return;
+    }
+
+    let errors = [];
+    points.forEach(p => {
+      const pred = p.x > threshold ? 1 : -1;
+      const stepDiv = document.createElement('div');
+      const ok = pred === p.y;
+      if(!ok) errors.push(p.name);
+      stepDiv.className = 'step-row' + (ok ? '' : ' zero');
+      stepDiv.textContent = `${p.name} (score=${p.x}, thật=${labelText(p.y)}) → dự đoán=${labelText(pred)} ${ok ? '✓' : '✗ SAI'}`;
+      box.appendChild(stepDiv);
+      setTimeout(() => stepDiv.classList.add('show'), 0);
+    });
+
+    if(errors.length === 0){
+      badge.textContent = `✅ 0 LỖI trên ${points.length} khách hàng — threshold b=${threshold}, margin rộng, mô hình đáng tin cậy.`;
+      badge.className = 'ok-good show';
+    } else if(errors.length === 1 && outlierOn && errors[0].includes('B0')){
+      badge.textContent = `✅ CHỈ SAI ĐÚNG 1 ĐIỂM (${errors.join(', ')}) — đúng như kỳ vọng của Soft-margin: "hy sinh" nhiễu, giữ phần còn lại chính xác.`;
+      badge.className = 'ok-good show';
+    } else {
+      badge.textContent = `❌ SAI ${errors.length} khách hàng (${errors.join(', ')}) — threshold bị kéo lệch để chiều 1 điểm nhiễu, gây oan sai hàng loạt.`;
+      badge.className = 'ok-bad show';
+    }
+  }, (i + 1) * 220 + 150);
+}
+
+function randomDemo(){
+  document.getElementById('w-outlier').checked = Math.random() < 0.75;
+  const modes = document.querySelectorAll('input[name="marginMode"]');
+  modes[Math.floor(Math.random() * modes.length)].checked = true;
+  runDemo();
+}
+
+const ANSWERS = {q1:'right', q2:'right', q3:'right'};
+function checkQuiz(){
+  let score = 0;
+  Object.keys(ANSWERS).forEach(q => {
+    const chosen = document.querySelector(`input[name="${q}"]:checked`);
+    const fb = document.getElementById('fb-' + q);
+    fb.classList.remove('correct','wrong');
+    if(!chosen){
+      fb.textContent = '⚠️ Bạn chưa chọn đáp án cho câu này.';
+      fb.classList.add('wrong','show');
+      return;
+    }
+    if(chosen.value === 'right'){
+      score++;
+      fb.textContent = '✅ Chính xác!';
+      fb.classList.add('correct','show');
+    } else {
+      fb.textContent = '❌ Chưa đúng, xem lại phần Trạng thái ở trên nhé.';
+      fb.classList.add('wrong','show');
+    }
+  });
+  const scoreBox = document.getElementById('quizScore');
+  scoreBox.textContent = `Điểm của bạn: ${score}/3`;
+  scoreBox.className = 'show';
+}
+
+drawNumLine(BASE.concat([OUTLIER]), null);
+</script>
+</body>
+</html>

@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Random Forest & Ensemble Learning — Học AI/ML dễ hiểu</title>
+<style>
+  :root{
+    --bg:#f6f7fb; --bg2:#ffffff; --text:#1c1f2b; --muted:#5b6072;
+    --accent:#5b5ff0; --accent2:#00b894; --warn:#f0a500; --bad:#e0455a;
+    --border:#e3e5ef; --card:#ffffff; --code-bg:#1c1f2b; --code-text:#e8eaf6;
+    --shadow: 0 8px 24px rgba(30,32,60,0.08);
+  }
+  [data-theme="dark"]{
+    --bg:#12131c; --bg2:#181a26; --text:#eceefb; --muted:#a2a6c2;
+    --accent:#8b8ffb; --accent2:#3ddc97; --warn:#ffc233; --bad:#ff6b7d;
+    --border:#2a2d40; --card:#1c1e2c; --code-bg:#0d0e16; --code-text:#dfe2f7;
+    --shadow: 0 8px 28px rgba(0,0,0,0.45);
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; font-family:"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+    background:var(--bg); color:var(--text); transition:background .4s ease,color .4s ease;
+    line-height:1.6;
+  }
+  .wrap{max-width:960px; margin:0 auto; padding:20px 16px 80px;}
+  header.hero{
+    text-align:center; padding:36px 20px; border-radius:20px;
+    background:linear-gradient(135deg,var(--accent),#9b8cff);
+    color:#fff; box-shadow:var(--shadow);
+    animation: fadeInDown .7s ease both;
+    position:relative;
+  }
+  header.hero h1{margin:0 0 8px; font-size:clamp(22px,4vw,34px);}
+  header.hero p{margin:0; opacity:.92; font-size:15px;}
+  .topbar{display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:14px;}
+  .badge{
+    display:inline-block; background:rgba(255,255,255,.18); padding:4px 12px;
+    border-radius:999px; font-size:12px; letter-spacing:.5px; margin-bottom:10px;
+  }
+  button.toggle{
+    background:var(--card); color:var(--text); border:1px solid var(--border);
+    padding:8px 14px; border-radius:999px; cursor:pointer; font-size:13px;
+    box-shadow:var(--shadow); transition:transform .25s ease, background .3s ease;
+  }
+  button.toggle:hover{transform:translateY(-2px);}
+  section{
+    background:var(--card); border:1px solid var(--border); border-radius:16px;
+    padding:22px 20px; margin-top:22px; box-shadow:var(--shadow);
+    animation: slideUp .6s ease both;
+  }
+  section h2{margin-top:0; font-size:20px; display:flex; align-items:center; gap:8px;}
+  section h2 .num{
+    background:var(--accent); color:#fff; width:28px; height:28px; border-radius:50%;
+    display:inline-flex; align-items:center; justify-content:center; font-size:14px; flex:none;
+  }
+  p{color:var(--text);}
+  .muted{color:var(--muted);}
+  code, pre{font-family:"Fira Code",Consolas,monospace;}
+  pre{
+    background:var(--code-bg); color:var(--code-text); padding:14px 16px; border-radius:12px;
+    overflow-x:auto; font-size:13px; line-height:1.55;
+  }
+  code.inline{background:var(--code-bg); color:var(--code-text); padding:2px 6px; border-radius:6px; font-size:.9em;}
+  table{width:100%; border-collapse:collapse; margin:12px 0; font-size:14px; overflow-x:auto; display:block;}
+  table thead, table tbody{width:100%;}
+  th,td{border:1px solid var(--border); padding:8px 10px; text-align:left; vertical-align:top;}
+  th{background:var(--bg); color:var(--muted); font-weight:600;}
+  .grade-good{color:var(--accent2); font-weight:700;}
+  .grade-ok{color:var(--warn); font-weight:700;}
+  .grade-bad{color:var(--bad); font-weight:700;}
+  .state-card{
+    border:1px dashed var(--border); border-radius:14px; padding:16px; margin:14px 0;
+    background:var(--bg); animation: slideUp .5s ease both;
+  }
+  .state-card h3{margin:0 0 6px; font-size:16px; display:flex; align-items:center; gap:8px; flex-wrap:wrap;}
+  .pill{font-size:11px; padding:3px 10px; border-radius:999px; font-weight:700;}
+  .pill.good{background:rgba(0,184,148,.15); color:var(--accent2);}
+  .pill.ok{background:rgba(240,165,0,.15); color:var(--warn);}
+  .pill.bad{background:rgba(224,69,90,.15); color:var(--bad);}
+  .ascii{
+    background:var(--code-bg); color:var(--code-text); padding:14px; border-radius:12px;
+    font-family:"Fira Code",Consolas,monospace; font-size:12.5px; white-space:pre; overflow-x:auto;
+  }
+  .grid2{display:grid; grid-template-columns:1fr; gap:14px;}
+  @media(min-width:720px){.grid2{grid-template-columns:1fr 1fr;}}
+  .demo-box{display:flex; flex-wrap:wrap; gap:10px; margin:14px 0;}
+  .demo-box label{display:flex; flex-direction:column; font-size:13px; color:var(--muted); gap:6px; flex:1; min-width:150px;}
+  .demo-box input{
+    padding:10px 12px; border-radius:10px; border:1px solid var(--border);
+    background:var(--bg2); color:var(--text); font-size:14px;
+  }
+  .btn{
+    background:var(--accent); color:#fff; border:none; padding:11px 20px; border-radius:10px;
+    font-size:14px; cursor:pointer; font-weight:600; transition:transform .25s ease, box-shadow .25s ease;
+  }
+  .btn:hover{transform:translateY(-2px); box-shadow:0 6px 16px rgba(91,95,240,.35);}
+  .btn.secondary{background:var(--accent2);}
+  #treeBox{margin-top:14px; display:grid; grid-template-columns:1fr; gap:8px;}
+  @media(min-width:640px){#treeBox{grid-template-columns:1fr 1fr;}}
+  .tree-vote{
+    padding:10px 14px; border-left:3px solid var(--border); border-radius:8px;
+    background:var(--bg); opacity:0; transform:translateY(6px); font-size:13.5px;
+  }
+  .tree-vote.show{animation: slideDown .45s ease forwards;}
+  .tree-vote.vote-yes{border-left-color:var(--bad); background:rgba(224,69,90,.08);}
+  .tree-vote.vote-no{border-left-color:var(--accent2); background:rgba(0,184,148,.08);}
+  .pulse{animation: pulse 1s ease infinite;}
+  #resultBadge{
+    display:inline-block; margin-top:14px; padding:10px 18px; border-radius:12px; font-weight:700;
+    opacity:0;
+  }
+  #resultBadge.show{animation: slideDown .5s ease forwards;}
+  .ok-good{background:rgba(0,184,148,.15); color:var(--accent2);}
+  .ok-bad{background:rgba(224,69,90,.15); color:var(--bad);}
+  .quiz-q{margin-bottom:18px; padding-bottom:14px; border-bottom:1px dashed var(--border);}
+  .quiz-q:last-child{border-bottom:none;}
+  .quiz-opt{
+    display:flex; align-items:center; gap:8px; padding:8px 10px; border-radius:10px; margin:4px 0;
+    cursor:pointer; border:1px solid transparent; transition:background .25s ease;
+  }
+  .quiz-opt:hover{background:var(--bg);}
+  .quiz-opt input{accent-color:var(--accent);}
+  .feedback{
+    margin-top:8px; padding:8px 12px; border-radius:8px; font-size:13.5px; display:none;
+  }
+  .feedback.show{display:block; animation: slideDown .4s ease both;}
+  .feedback.correct{background:rgba(0,184,148,.15); color:var(--accent2);}
+  .feedback.wrong{background:rgba(224,69,90,.15); color:var(--bad);}
+  #quizScore, #warmupScore{
+    margin-top:10px; font-weight:700; opacity:0;
+  }
+  #quizScore.show, #warmupScore.show{animation: fadeInDown .5s ease forwards;}
+  .data-good, .data-bad{padding:12px 14px; border-radius:12px; font-size:13.5px;}
+  .data-good{background:rgba(0,184,148,.08); border:1px solid rgba(0,184,148,.35);}
+  .data-bad{background:rgba(224,69,90,.08); border:1px solid rgba(224,69,90,.35);}
+  .warmup-box{
+    border:1px dashed var(--border); border-radius:14px; padding:14px 16px; margin:12px 0;
+    background:var(--bg);
+  }
+  .warmup-box h4{margin:0 0 8px; font-size:14.5px;}
+  .fillblank{
+    padding:9px 12px; border-radius:10px; border:1px solid var(--border);
+    background:var(--bg2); color:var(--text); font-size:14px; width:220px; max-width:100%;
+  }
+  select.matchsel{
+    padding:8px 10px; border-radius:8px; border:1px solid var(--border);
+    background:var(--bg2); color:var(--text); font-size:13.5px;
+  }
+  .match-row{display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin:6px 0;}
+  footer{text-align:center; margin-top:30px; font-size:12.5px; color:var(--muted);}
+
+  @keyframes fadeInDown{
+    from{opacity:0; transform:translateY(-16px);}
+    to{opacity:1; transform:translateY(0);}
+  }
+  @keyframes slideUp{
+    from{opacity:0; transform:translateY(18px);}
+    to{opacity:1; transform:translateY(0);}
+  }
+  @keyframes slideDown{
+    from{opacity:0; transform:translateY(-8px);}
+    to{opacity:1; transform:translateY(0);}
+  }
+  @keyframes pulse{
+    0%,100%{transform:scale(1);}
+    50%{transform:scale(1.05);}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="topbar">
+    <span class="muted" style="font-size:13px;">Claude-lession · AI/ML Tiếng Việt</span>
+    <button class="toggle" onclick="toggleTheme()">🌙 / ☀️ Đổi giao diện</button>
+  </div>
+
+  <header class="hero">
+    <span class="badge">ENSEMBLE LEARNING — SUPERVISED CLASSIFICATION</span>
+    <h1>🌲🌲🌲 Random Forest & Ensemble Learning</h1>
+    <p>Một cây quyết định hay run rẩy trước dữ liệu mới — vậy 100 cây "họp" lại có tốt hơn? Bagging vs Boosting vs Stacking, có demo bỏ phiếu và quiz tự chấm.</p>
+  </header>
+
+  <!-- KHỞI ĐỘNG NHANH -->
+  <section>
+    <h2><span class="num">0</span> Khởi động nhanh (60 giây)</h2>
+    <p class="muted">Trả lời nhanh 3 câu dưới đây trước khi học — không cần đúng hết, chỉ để "hâm nóng" não bạn.</p>
+
+    <div class="warmup-box">
+      <h4>1️⃣ Trắc nghiệm nhanh</h4>
+      <p>Bạn có 1 cây quyết định dự đoán đúng 70% và rất nhạy với dữ liệu nhiễu. Theo trực giác, kết hợp <b>100 cây tương tự</b> (mỗi cây học trên một tập dữ liệu con hơi khác nhau) rồi lấy đa số phiếu sẽ cho kết quả:</p>
+      <label class="quiz-opt"><input type="radio" name="w1" value="wrong">Chắc chắn tệ hơn vì nhiều cây sẽ "cãi nhau"</label>
+      <label class="quiz-opt"><input type="radio" name="w1" value="right">Thường ổn định & chính xác hơn vì lỗi ngẫu nhiên của từng cây bị triệt tiêu lẫn nhau</label>
+      <label class="quiz-opt"><input type="radio" name="w1" value="wrong">Y hệt 1 cây, không khác gì</label>
+    </div>
+
+    <div class="warmup-box">
+      <h4>2️⃣ Điền khuyết</h4>
+      <p>Kỹ thuật lấy mẫu <b>ngẫu nhiên có hoàn lại</b> (một dòng dữ liệu có thể được chọn lại nhiều lần) để tạo ra nhiều tập huấn luyện con khác nhau cho từng cây, gọi là kỹ thuật <b>______</b>.</p>
+      <input class="fillblank" type="text" id="w2input" placeholder="Nhập từ khoá...">
+    </div>
+
+    <div class="warmup-box">
+      <h4>3️⃣ Đối chiếu với bản mẫu</h4>
+      <p>Ghép mỗi thuật toán với đúng nhóm kỹ thuật của nó:</p>
+      <div class="match-row">Random Forest →
+        <select class="matchsel" id="m1">
+          <option value="">-- chọn --</option>
+          <option value="bag">Bagging (song song)</option>
+          <option value="boost">Boosting (tuần tự)</option>
+          <option value="stack">Stacking (kết hợp model khác loại)</option>
+        </select>
+      </div>
+      <div class="match-row">AdaBoost / Gradient Boosting →
+        <select class="matchsel" id="m2">
+          <option value="">-- chọn --</option>
+          <option value="bag">Bagging (song song)</option>
+          <option value="boost">Boosting (tuần tự)</option>
+          <option value="stack">Stacking (kết hợp model khác loại)</option>
+        </select>
+      </div>
+      <div class="match-row">Tree + Logistic + KNN → 1 meta-model →
+        <select class="matchsel" id="m3">
+          <option value="">-- chọn --</option>
+          <option value="bag">Bagging (song song)</option>
+          <option value="boost">Boosting (tuần tự)</option>
+          <option value="stack">Stacking (kết hợp model khác loại)</option>
+        </select>
+      </div>
+    </div>
+
+    <button class="btn" onclick="checkWarmup()">✅ Kiểm tra khởi động</button>
+    <div id="warmupScore"></div>
+  </section>
+
+  <!-- 1. ĐỊNH NGHĨA -->
+  <section>
+    <h2><span class="num">1</span> Định nghĩa ngắn gọn</h2>
+    <p><b>Ensemble Learning (học tập hợp)</b> là kỹ thuật <b>kết hợp nhiều model yếu</b> (thường là cây quyết định) thành <b>một model mạnh</b> — dựa trên nguyên lý "trí tuệ đám đông": nếu mỗi model mắc lỗi khác nhau và độc lập tương đối, thì lỗi sẽ bị triệt tiêu khi gộp lại.</p>
+    <div class="ascii">   Tree 1    Tree 2    Tree 3    ...    Tree 100
+     │          │         │                 │
+     ▼          ▼         ▼                 ▼
+   "Rời"      "Ở lại"   "Rời"      ...     "Rời"
+     └──────────┴─────────┴────────┴────────┘
+                        │
+                 BỎ PHIẾU ĐA SỐ (vote)
+                        ▼
+                 ✅ Dự đoán cuối: "Rời" (62/100 phiếu)</div>
+    <p class="muted">Có 2 hướng kết hợp chính: <code class="inline">Bagging</code> (nhiều cây học <b>song song</b>, độc lập) và <code class="inline">Boosting</code> (nhiều cây học <b>tuần tự</b>, cây sau sửa lỗi cây trước).</p>
+  </section>
+
+  <!-- 2. BÀI TOÁN THỰC TẾ -->
+  <section>
+    <h2><span class="num">2</span> Bài toán thực tế: Dự đoán khách hàng rời bỏ (Customer Churn)</h2>
+    <p>Nhà mạng viễn thông muốn dự đoán khách hàng nào <b>sắp hủy dịch vụ (Churn)</b> dựa trên: <code class="inline">Số tháng đã dùng</code>, <code class="inline">Số lần gọi CSKH than phiền</code>, <code class="inline">Chi tiêu TB/tháng (nghìn đồng)</code>.</p>
+    <table>
+      <thead><tr><th>Khách hàng</th><th>Số tháng dùng</th><th>Lần gọi CSKH</th><th>Chi tiêu TB/tháng</th><th>Nhãn thật</th></tr></thead>
+      <tbody>
+        <tr><td>A</td><td>3</td><td>5</td><td>120</td><td>🔴 Rời bỏ</td></tr>
+        <tr><td>B</td><td>24</td><td>0</td><td>350</td><td>🟢 Ở lại</td></tr>
+        <tr><td>C</td><td>6</td><td>4</td><td>90</td><td>🔴 Rời bỏ</td></tr>
+        <tr><td>D</td><td>18</td><td>1</td><td>280</td><td>🟢 Ở lại</td></tr>
+        <tr><td>E</td><td>2</td><td>6</td><td>60</td><td>🔴 Rời bỏ</td></tr>
+        <tr><td>F</td><td>30</td><td>0</td><td>400</td><td>🟢 Ở lại</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- 3. 4 TRẠNG THÁI -->
+  <section>
+    <h2><span class="num">3</span> 4 trạng thái của Ensemble Learning</h2>
+    <p class="muted">Cùng bài toán churn, 4 cách kết hợp model cho kết quả rất khác nhau:</p>
+
+    <!-- State 1 -->
+    <div class="state-card">
+      <h3>🌳 Trạng thái 1 — 1 Cây Quyết Định Duy Nhất <span class="pill bad">❌ Xấu</span></h3>
+      <div class="ascii">   [ 1 cây học TOÀN BỘ dữ liệu train ]
+              │
+              ▼
+   Rất khớp với train, nhưng thay đổi 1-2 dòng dữ liệu
+   → cây "gãy" theo hướng hoàn toàn khác (variance cao)</div>
+      <pre>from sklearn.tree import DecisionTreeClassifier
+model = DecisionTreeClassifier(max_depth=None)
+# Accuracy train = 100%  |  Accuracy test ≈ 71% (không ổn định giữa các lần chạy)</pre>
+      <p class="muted">Một cây sâu dễ overfit và <b>rất nhạy với nhiễu</b> — đổi ngẫu nhiên vài mẫu train là ra cây khác hẳn. Đây chính là lý do cần ensemble.</p>
+    </div>
+
+    <!-- State 2 -->
+    <div class="state-card">
+      <h3>🌲🌲 Trạng thái 2 — Bagging / Random Forest <span class="pill good">✅ Tốt</span></h3>
+      <div class="ascii">Bootstrap sample 1 ─▶ Tree 1 (dùng ngẫu nhiên vài feature)
+Bootstrap sample 2 ─▶ Tree 2
+Bootstrap sample 3 ─▶ Tree 3         SONG SONG, độc lập
+      ...                ...
+Bootstrap sample N ─▶ Tree N
+                          │
+                    BỎ PHIẾU ĐA SỐ ▶ kết quả cuối</div>
+      <pre>from sklearn.ensemble import RandomForestClassifier
+model = RandomForestClassifier(n_estimators=100, max_features="sqrt")
+# Accuracy train ≈ 98%  |  Accuracy test ≈ 89% (ổn định giữa các lần chạy)</pre>
+      <p class="muted">Mỗi cây học trên 1 <b>tập con bootstrap</b> + 1 <b>tập con feature ngẫu nhiên</b> → các cây "nhìn" dữ liệu khác nhau, sai lệch độc lập nên khi vote lại thì <b>giảm variance</b> mạnh. Đây là lý do Random Forest ổn định hơn hẳn 1 cây đơn.</p>
+    </div>
+
+    <!-- State 3 -->
+    <div class="state-card">
+      <h3>🚀 Trạng thái 3 — Boosting (AdaBoost / Gradient Boosting) <span class="pill ok">⚠️ Trung bình</span></h3>
+      <div class="ascii">Tree 1 (học toàn bộ, sai ở A,E)
+        │  tăng trọng số 2 mẫu sai (A, E)
+        ▼
+Tree 2 (tập trung sửa A, E, có thể sai chỗ khác)
+        │  tăng trọng số mẫu vẫn còn sai
+        ▼
+Tree 3 (tiếp tục sửa)      TUẦN TỰ, cây sau phụ thuộc cây trước
+        │
+   Cộng dồn có trọng số (weighted sum) ▶ kết quả cuối</div>
+      <pre>from sklearn.ensemble import GradientBoostingClassifier
+model = GradientBoostingClassifier(n_estimators=100, learning_rate=0.1)
+# Accuracy train ≈ 99%  |  Accuracy test ≈ 91% (cao nhất, NHƯNG...)</pre>
+      <p class="muted">Boosting giảm <b>bias</b> rất tốt (độ chính xác cao), nhưng vì mỗi cây "chăm chăm" sửa lỗi mẫu trước — nếu dữ liệu có <b>outlier/nhiễu nhãn</b>, boosting sẽ "học thuộc" luôn cả nhiễu đó. Cần tinh chỉnh <code class="inline">learning_rate</code> và <code class="inline">n_estimators</code> cẩn thận, dễ overfit nếu chạy quá nhiều vòng.</p>
+    </div>
+
+    <!-- State 4 -->
+    <div class="state-card">
+      <h3>🧩 Trạng thái 4 — Stacking (kết hợp nhiều loại model) <span class="pill ok">⚠️ Trung bình</span></h3>
+      <div class="ascii">Decision Tree ─┐
+Logistic Reg  ─┼─▶ dự đoán của từng model ─▶ Meta-Model (vd Logistic)
+KNN           ─┘        (là input mới)            ▼
+                                          Dự đoán cuối cùng</div>
+      <pre>from sklearn.ensemble import StackingClassifier
+model = StackingClassifier(
+    estimators=[('tree', DecisionTreeClassifier()), ('knn', KNeighborsClassifier())],
+    final_estimator=LogisticRegression())
+# Accuracy test ≈ 90%, nhưng train chậm hơn nhiều, khó giải thích (black-box)</pre>
+      <p class="muted">Stacking mạnh vì kết hợp nhiều "góc nhìn" model khác nhau, nhưng <b>phức tạp, tốn tài nguyên</b>, và nếu không dùng cross-validation đúng cách khi tạo input cho meta-model sẽ bị <b>rò rỉ dữ liệu (leakage)</b> làm ảo tưởng độ chính xác.</p>
+    </div>
+  </section>
+
+  <!-- BẢNG SO SÁNH -->
+  <section>
+    <h2><span class="num">4</span> Bảng so sánh tổng hợp</h2>
+    <table>
+      <thead><tr><th>Trạng Thái</th><th>Input</th><th>Xử Lý</th><th>Output</th><th>Đánh Giá</th></tr></thead>
+      <tbody>
+        <tr><td>1 Cây đơn</td><td>6 khách hàng</td><td>1 cây sâu, học toàn bộ</td><td>Acc train/test ≈ 100%/71%, không ổn định</td><td class="grade-bad">❌ Variance cao</td></tr>
+        <tr><td>Bagging (Random Forest)</td><td>6 khách hàng</td><td>N cây song song, bootstrap + random feature, vote đa số</td><td>Acc train/test ≈ 98%/89%, ổn định</td><td class="grade-good">✅ Giảm variance</td></tr>
+        <tr><td>Boosting (AdaBoost/GBM)</td><td>6 khách hàng</td><td>N cây tuần tự, cây sau sửa lỗi cây trước, cộng dồn có trọng số</td><td>Acc train/test ≈ 99%/91%, nhạy nhiễu</td><td class="grade-ok">⚠️ Giảm bias, dễ overfit nếu quá đà</td></tr>
+        <tr><td>Stacking</td><td>6 khách hàng</td><td>Nhiều loại model khác nhau + 1 meta-model tổng hợp</td><td>Acc test ≈ 90%, chậm, khó giải thích</td><td class="grade-ok">⚠️ Mạnh nhưng phức tạp</td></tr>
+      </tbody>
+    </table>
+    <p class="muted">💡 <b>Bài học:</b> Bagging giúp mô hình <b>ổn định hơn</b> (giảm variance), Boosting giúp mô hình <b>chính xác hơn</b> (giảm bias) nhưng rủi ro overfit nếu không kiểm soát <code class="inline">learning_rate</code>/số vòng lặp. Không có công thức "luôn thắng" — cần thử và validate bằng cross-validation.</p>
+  </section>
+
+  <!-- DEMO TƯƠNG TÁC -->
+  <section>
+    <h2><span class="num">5</span> Demo: Rừng 5 cây bỏ phiếu (mini Random Forest)</h2>
+    <p class="muted">Nhập thông tin khách hàng, bấm <b>Chạy Demo</b> để xem 5 "cây" (mỗi cây nhìn dữ liệu theo góc khác nhau) bỏ phiếu, rồi tổng hợp thành kết quả cuối.</p>
+    <div class="demo-box">
+      <label>Số tháng đã dùng
+        <input type="number" id="tenureInput" value="8" min="0" max="60">
+      </label>
+      <label>Số lần gọi CSKH than phiền
+        <input type="number" id="callsInput" value="3" min="0" max="20">
+      </label>
+      <label>Chi tiêu TB/tháng (nghìn đồng)
+        <input type="number" id="spendInput" value="150" min="0" max="500">
+      </label>
+    </div>
+    <button class="btn" onclick="runDemo()">▶ Chạy Demo</button>
+    <button class="btn secondary" onclick="randomDemo()">🎲 Dữ liệu ngẫu nhiên</button>
+    <div id="treeBox"></div>
+    <div id="resultBadge"></div>
+  </section>
+
+  <!-- DỮ LIỆU TỐT vs XẤU -->
+  <section>
+    <h2><span class="num">6</span> Dữ liệu tốt vs dữ liệu xấu</h2>
+    <div class="grid2">
+      <div class="data-good">
+        <b>✅ Dữ liệu tốt</b>
+        <ul>
+          <li>Đủ mẫu cho cả 2 lớp, tỉ lệ Churn/Ở lại không lệch quá 80/20</li>
+          <li>Có tính ngẫu nhiên thật giữa các cây (bootstrap + random feature subset)</li>
+          <li>Không có feature "rò rỉ" thông tin tương lai</li>
+          <li>VD: 2.000 khách hàng, tỉ lệ Churn ≈ 27% (giống thực tế Telco)</li>
+        </ul>
+      </div>
+      <div class="data-bad">
+        <b>❌ Dữ liệu xấu</b>
+        <ul>
+          <li>Mất cân bằng nặng: 980 "Ở lại" / 20 "Rời bỏ" → cả rừng chỉ đoán "Ở lại"</li>
+          <li>Feature rò rỉ (leakage): dùng "Ngày hủy hợp đồng" để dự đoán Churn (chỉ có SAU khi đã churn)</li>
+          <li>Các cây thiếu tính ngẫu nhiên (không bootstrap, không random feature) → cây nào cũng giống nhau, mất hết lợi ích ensemble</li>
+          <li>Dữ liệu trùng lặp (duplicate rows) làm sai lệch đánh giá out-of-bag (OOB)</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- BÀI TẬP + QUIZ -->
+  <section>
+    <h2><span class="num">7</span> Bài tập nhỏ</h2>
+    <p>Cho khách hàng: <b>Số tháng dùng = 4, Số lần gọi CSKH = 5, Chi tiêu TB/tháng = 100</b>. Hãy tự đoán xem đa số trong "rừng 5 cây" ở Demo phía trên sẽ vote "Rời bỏ" hay "Ở lại" trước khi bấm Chạy Demo kiểm tra lại.</p>
+
+    <h2 style="margin-top:26px;"><span class="num">?</span> Quiz tự kiểm tra</h2>
+
+    <div class="quiz-q">
+      <p><b>Câu 1.</b> Điểm khác biệt cốt lõi giữa Bagging và Boosting là gì?</p>
+      <label class="quiz-opt"><input type="radio" name="q1" value="wrong">Bagging dùng cây, Boosting dùng mạng neural</label>
+      <label class="quiz-opt"><input type="radio" name="q1" value="right">Bagging huấn luyện các model song song, độc lập; Boosting huấn luyện tuần tự, cây sau sửa lỗi cây trước</label>
+      <label class="quiz-opt"><input type="radio" name="q1" value="wrong">Bagging chỉ dùng được cho hồi quy, Boosting chỉ dùng cho phân loại</label>
+      <div class="feedback" id="fb-q1"></div>
+    </div>
+
+    <div class="quiz-q">
+      <p><b>Câu 2.</b> Vì sao Random Forest thường ổn định (ít variance) hơn 1 cây quyết định đơn?</p>
+      <label class="quiz-opt"><input type="radio" name="q2" value="wrong">Vì Random Forest dùng ít dữ liệu hơn</label>
+      <label class="quiz-opt"><input type="radio" name="q2" value="right">Vì lỗi ngẫu nhiên của từng cây (học trên bootstrap + feature khác nhau) bị triệt tiêu khi vote đa số</label>
+      <label class="quiz-opt"><input type="radio" name="q2" value="wrong">Vì Random Forest luôn có max_depth=1</label>
+      <div class="feedback" id="fb-q2"></div>
+    </div>
+
+    <div class="quiz-q">
+      <p><b>Câu 3.</b> Rủi ro lớn nhất khi dùng Boosting với dữ liệu nhiều outlier/nhiễu nhãn là gì?</p>
+      <label class="quiz-opt"><input type="radio" name="q3" value="wrong">Boosting sẽ tự động bỏ qua outlier, không có rủi ro gì</label>
+      <label class="quiz-opt"><input type="radio" name="q3" value="right">Boosting tăng trọng số các mẫu sai liên tục, có thể "học thuộc" luôn cả outlier/nhiễu → overfit</label>
+      <label class="quiz-opt"><input type="radio" name="q3" value="wrong">Boosting sẽ chạy chậm hơn nhưng độ chính xác không đổi</label>
+      <div class="feedback" id="fb-q3"></div>
+    </div>
+
+    <button class="btn" onclick="checkQuiz()">✅ Chấm điểm</button>
+    <div id="quizScore"></div>
+  </section>
+
+  <footer>
+    Claude-lession · Bài giảng AI/ML tiếng Việt tự động · Chủ đề tham khảo từ khóa học <i>AI For Beginners</i>.
+  </footer>
+</div>
+
+<script>
+function toggleTheme(){
+  const root = document.documentElement;
+  const cur = root.getAttribute('data-theme');
+  root.setAttribute('data-theme', cur === 'dark' ? 'light' : 'dark');
+  try{ localStorage.setItem('lesson-theme', root.getAttribute('data-theme')); }catch(e){}
+}
+(function initTheme(){
+  try{
+    const saved = localStorage.getItem('lesson-theme');
+    if(saved){ document.documentElement.setAttribute('data-theme', saved); }
+    else if(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches){
+      document.documentElement.setAttribute('data-theme','dark');
+    }
+  }catch(e){}
+})();
+
+function checkWarmup(){
+  let score = 0, total = 5;
+  const box = document.getElementById('warmupScore');
+
+  const w1 = document.querySelector('input[name="w1"]:checked');
+  if(w1 && w1.value === 'right') score++;
+
+  const w2 = (document.getElementById('w2input').value || '').trim().toLowerCase();
+  if(w2.includes('bootstrap')) score++;
+
+  const m1 = document.getElementById('m1').value;
+  const m2 = document.getElementById('m2').value;
+  const m3 = document.getElementById('m3').value;
+  if(m1 === 'bag') score++;
+  if(m2 === 'boost') score++;
+  if(m3 === 'stack') score++;
+
+  box.textContent = `Khởi động xong: ${score}/${total} đúng — ` +
+    (score >= 4 ? '🔥 Trực giác tốt, vào bài chính thôi!' : '👍 Chưa sao, đọc kỹ Trạng thái 2-4 bên dưới nhé.');
+  box.className = 'show';
+}
+
+const TREE_RULES = [
+  {name:'Cây 1 (nhìn: Số tháng dùng)', vote:(t,c,s)=> t < 10},
+  {name:'Cây 2 (nhìn: Số lần gọi CSKH)', vote:(t,c,s)=> c >= 3},
+  {name:'Cây 3 (nhìn: Chi tiêu TB/tháng)', vote:(t,c,s)=> s < 130},
+  {name:'Cây 4 (nhìn: Số tháng + CSKH)', vote:(t,c,s)=> (t < 12 && c >= 2)},
+  {name:'Cây 5 (nhìn: CSKH + Chi tiêu)', vote:(t,c,s)=> (c >= 2 && s < 180)},
+];
+
+function runDemo(){
+  const tenure = parseFloat(document.getElementById('tenureInput').value) || 0;
+  const calls = parseFloat(document.getElementById('callsInput').value) || 0;
+  const spend = parseFloat(document.getElementById('spendInput').value) || 0;
+
+  const box = document.getElementById('treeBox');
+  box.innerHTML = '';
+  let yesVotes = 0;
+
+  TREE_RULES.forEach((rule, i) => {
+    const churn = rule.vote(tenure, calls, spend);
+    if(churn) yesVotes++;
+    const div = document.createElement('div');
+    div.className = 'tree-vote ' + (churn ? 'vote-yes' : 'vote-no');
+    div.textContent = `🌲 ${rule.name} ▶ vote: ${churn ? '🔴 Rời bỏ' : '🟢 Ở lại'}`;
+    box.appendChild(div);
+    setTimeout(() => div.classList.add('show'), i * 300);
+  });
+
+  const majorityChurn = yesVotes >= 3;
+  const badge = document.getElementById('resultBadge');
+  badge.className = '';
+  setTimeout(() => {
+    badge.textContent = majorityChurn
+      ? `🔴 DỰ ĐOÁN CUỐI: RỜI BỎ (${yesVotes}/5 phiếu)`
+      : `🟢 DỰ ĐOÁN CUỐI: Ở LẠI (${5-yesVotes}/5 phiếu chọn Ở lại)`;
+    badge.className = (majorityChurn ? 'ok-bad' : 'ok-good') + ' show';
+  }, TREE_RULES.length * 300 + 150);
+}
+
+function randomDemo(){
+  document.getElementById('tenureInput').value = Math.floor(Math.random()*36);
+  document.getElementById('callsInput').value = Math.floor(Math.random()*8);
+  document.getElementById('spendInput').value = Math.floor(Math.random()*400)+30;
+  runDemo();
+}
+
+const ANSWERS = {q1:'right', q2:'right', q3:'right'};
+function checkQuiz(){
+  let score = 0;
+  Object.keys(ANSWERS).forEach(q => {
+    const chosen = document.querySelector(`input[name="${q}"]:checked`);
+    const fb = document.getElementById('fb-' + q);
+    fb.classList.remove('correct','wrong');
+    if(!chosen){
+      fb.textContent = '⚠️ Bạn chưa chọn đáp án cho câu này.';
+      fb.classList.add('wrong','show');
+      return;
+    }
+    if(chosen.value === 'right'){
+      score++;
+      fb.textContent = '✅ Chính xác!';
+      fb.classList.add('correct','show');
+    } else {
+      fb.textContent = '❌ Chưa đúng, xem lại phần Trạng thái ở trên nhé.';
+      fb.classList.add('wrong','show');
+    }
+  });
+  const scoreBox = document.getElementById('quizScore');
+  scoreBox.textContent = `Điểm của bạn: ${score}/3`;
+  scoreBox.className = 'show';
+}
+</script>
+</body>
+</html>

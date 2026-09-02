@@ -1,0 +1,856 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<title>Overfitting vs Underfitting: Model Học Vừa Đủ Là Sao?</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:ital,wght@0,400;0,500;0,600;0,700;0,800;1,500&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f3f5fb;
+    --bg-2: #e9ecf7;
+    --card: #ffffff;
+    --ink: #1b1e2b;
+    --muted: #676c85;
+    --border: #dde1f0;
+    --accent: #5b5bd6;
+    --accent-ink: #ffffff;
+    --path: #2f8fb0;
+    --test: #d6685b;
+    --good: #2f8f57;
+    --good-bg: #e6f3ea;
+    --warn: #b8790f;
+    --warn-bg: #faf0dc;
+    --bad: #c23b4f;
+    --bad-bg: #fbe8ea;
+    --code-bg: #1b1e2b;
+    --code-ink: #e9e3d3;
+    --shadow: 0 1px 2px rgba(27,30,43,0.05), 0 8px 24px -12px rgba(27,30,43,0.22);
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #12131c;
+      --bg-2: #191b26;
+      --card: #1b1d2a;
+      --ink: #ece9f4;
+      --muted: #9a97ac;
+      --border: #2b2d3d;
+      --accent: #8b8bf0;
+      --accent-ink: #14152080;
+      --path: #5fb8d6;
+      --test: #e88b7d;
+      --good: #57c17f;
+      --good-bg: #1b2b21;
+      --warn: #e0b04d;
+      --warn-bg: #2c2515;
+      --bad: #e2687a;
+      --bad-bg: #2e1c22;
+      --code-bg: #0d0e17;
+      --code-ink: #e9e3d3;
+      --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 12px 30px -14px rgba(0,0,0,0.6);
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #12131c;
+    --bg-2: #191b26;
+    --card: #1b1d2a;
+    --ink: #ece9f4;
+    --muted: #9a97ac;
+    --border: #2b2d3d;
+    --accent: #8b8bf0;
+    --accent-ink: #14152080;
+    --path: #5fb8d6;
+    --test: #e88b7d;
+    --good: #57c17f;
+    --good-bg: #1b2b21;
+    --warn: #e0b04d;
+    --warn-bg: #2c2515;
+    --bad: #e2687a;
+    --bad-bg: #2e1c22;
+    --code-bg: #0d0e17;
+    --code-ink: #e9e3d3;
+    --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 12px 30px -14px rgba(0,0,0,0.6);
+    color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Be Vietnam Pro", "Segoe UI", system-ui, sans-serif;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+  ::selection { background: var(--accent); color: var(--accent-ink); }
+  .wrap { max-width: 940px; margin: 0 auto; padding: 0 20px 96px; }
+  a { color: var(--accent); }
+
+  code, .mono, table.trace, .code-block, .pill-code {
+    font-family: "JetBrains Mono", ui-monospace, Menlo, monospace;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .theme-toggle {
+    position: fixed; top: 16px; right: 16px; z-index: 40;
+    background: var(--card); border: 1px solid var(--border);
+    color: var(--ink); border-radius: 999px; padding: 8px 14px;
+    font-size: 13px; font-weight: 600; cursor: pointer; box-shadow: var(--shadow);
+    font-family: inherit;
+  }
+  .theme-toggle:hover { border-color: var(--accent); }
+
+  header.hero {
+    padding: 72px 20px 40px;
+    text-align: left;
+    background:
+      radial-gradient(60% 90% at 85% 0%, color-mix(in srgb, var(--accent) 18%, transparent), transparent 70%),
+      var(--bg-2);
+    border-bottom: 1px solid var(--border);
+  }
+  .hero-inner { max-width: 940px; margin: 0 auto; }
+  .eyebrow {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-size: 12.5px; letter-spacing: 0.08em; text-transform: uppercase;
+    color: var(--muted); font-weight: 600; margin-bottom: 18px;
+    opacity: 0; animation: fadeInDown 0.6s ease forwards;
+  }
+  .eyebrow .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); animation: pulse 2s ease-in-out infinite; }
+  @keyframes pulse { 0%,100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.5; transform: scale(1.4); } }
+  h1 {
+    font-family: "Be Vietnam Pro", sans-serif;
+    font-weight: 800;
+    font-size: clamp(30px, 5vw, 46px);
+    line-height: 1.1;
+    margin: 0 0 16px;
+    text-wrap: balance;
+    opacity: 0; animation: fadeInDown 0.7s ease 0.08s forwards;
+  }
+  h1 em { color: var(--accent); font-style: normal; }
+  .hero p.lede {
+    font-size: clamp(16px, 2vw, 18.5px);
+    color: var(--muted);
+    max-width: 64ch;
+    margin: 0;
+    opacity: 0; animation: fadeInDown 0.7s ease 0.16s forwards;
+  }
+  @keyframes fadeInDown {
+    from { opacity: 0; transform: translateY(-14px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  section { margin-top: 56px; }
+  .section-head { margin-bottom: 20px; }
+  .section-num {
+    font-family: "JetBrains Mono", monospace; font-size: 12.5px; color: var(--accent);
+    font-weight: 700; letter-spacing: 0.05em; display: block; margin-bottom: 6px;
+  }
+  h2 { font-size: clamp(22px, 3vw, 28px); font-weight: 800; margin: 0 0 8px; text-wrap: balance; }
+  .section-sub { color: var(--muted); margin: 0; max-width: 70ch; }
+
+  .reveal { opacity: 0; transform: translateY(22px); }
+  .reveal.in { animation: slideUp 0.6s cubic-bezier(.2,.7,.2,1) forwards; }
+  @keyframes slideUp { from { opacity: 0; transform: translateY(22px); } to { opacity: 1; transform: translateY(0); } }
+
+  .concept {
+    background: var(--card); border: 1px solid var(--border); border-radius: 16px;
+    padding: 24px; box-shadow: var(--shadow);
+  }
+  .concept pre { margin: 0; font-size: 12.6px; line-height: 1.55; color: var(--ink); overflow-x: auto; white-space: pre; }
+  .concept pre .lo { color: var(--path); }
+  .concept pre .hi { color: var(--accent); font-weight: 700; }
+  .concept pre .te { color: var(--test); }
+
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+  @media (max-width: 760px) { .grid { grid-template-columns: 1fr; } }
+
+  .card {
+    background: var(--card); border: 1px solid var(--border); border-radius: 16px;
+    padding: 20px; box-shadow: var(--shadow); display: flex; flex-direction: column; gap: 14px;
+    transition: transform 0.35s ease, box-shadow 0.35s ease;
+    min-width: 0;
+  }
+  .card > * { min-width: 0; }
+  .card:hover { transform: translateY(-3px); }
+  .card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+  .card-title { font-weight: 700; font-size: 17px; margin: 0; }
+  .card-title .idx { color: var(--accent); font-family: "JetBrains Mono", monospace; font-size: 13px; margin-right: 6px; }
+  .badge {
+    display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 700;
+    padding: 4px 10px; border-radius: 999px; white-space: nowrap;
+  }
+  .badge.good { color: var(--good); background: var(--good-bg); }
+  .badge.warn { color: var(--warn); background: var(--warn-bg); }
+  .badge.bad { color: var(--bad); background: var(--bad-bg); }
+
+  .ipo { display: flex; flex-wrap: wrap; gap: 8px; font-size: 12.5px; }
+  .ipo span { background: var(--bg-2); border: 1px solid var(--border); border-radius: 8px; padding: 4px 8px; color: var(--muted); }
+  .ipo b { color: var(--ink); }
+
+  .code-block {
+    background: var(--code-bg); color: var(--code-ink); border-radius: 10px;
+    padding: 14px 16px; font-size: 12.4px; line-height: 1.6; overflow-x: auto; white-space: pre;
+  }
+  .code-block .c1 { color: #8b8578; }
+  .code-block .kw { color: #8b8bf0; }
+  .code-block .fn { color: #7fc8ff; }
+  .code-block .st { color: #a8d99a; }
+
+  .canvas-wrap { background: var(--bg-2); border: 1px solid var(--border); border-radius: 10px; padding: 10px; position: relative; }
+  canvas { display: block; width: 100%; height: 160px; border-radius: 6px; }
+  .canvas-controls { display: flex; align-items: center; justify-content: space-between; margin-top: 8px; font-size: 12px; color: var(--muted); flex-wrap: wrap; gap: 8px; }
+  .legend { display: flex; gap: 12px; font-size: 11.5px; }
+  .legend span { display: inline-flex; align-items: center; gap: 4px; }
+  .legend i { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
+  .play-btn {
+    font-family: inherit; font-weight: 700; font-size: 12.5px; cursor: pointer;
+    background: var(--accent); color: var(--accent-ink); border: none; border-radius: 8px;
+    padding: 6px 12px; transition: filter 0.2s ease, transform 0.15s ease;
+  }
+  .play-btn:hover { filter: brightness(1.1); }
+  .play-btn:active { transform: scale(0.96); }
+
+  .verdict { font-size: 13.5px; color: var(--muted); }
+  .verdict b { color: var(--ink); }
+
+  .trace-scroll { overflow-x: auto; border-radius: 12px; border: 1px solid var(--border); }
+  table.trace { width: 100%; border-collapse: collapse; font-size: 12.8px; min-width: 420px; background: var(--card); }
+  table.trace th, table.trace td { padding: 9px 12px; text-align: right; border-bottom: 1px solid var(--border); }
+  table.trace th:first-child, table.trace td:first-child { text-align: left; }
+  table.trace thead th { background: var(--bg-2); font-weight: 700; color: var(--muted); font-size: 11.5px; text-transform: uppercase; letter-spacing: 0.04em; }
+  table.trace tr:last-child td { font-weight: 700; }
+
+  .cmp-scroll { overflow-x: auto; border-radius: 14px; border: 1px solid var(--border); box-shadow: var(--shadow); }
+  table.cmp { width: 100%; border-collapse: collapse; background: var(--card); min-width: 640px; }
+  table.cmp th, table.cmp td { padding: 14px 16px; text-align: left; border-bottom: 1px solid var(--border); font-size: 13.6px; vertical-align: top; }
+  table.cmp thead th { background: var(--bg-2); font-weight: 700; font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); }
+  table.cmp tbody tr:last-child td { border-bottom: none; }
+  table.cmp td.state { font-weight: 700; }
+
+  .duo { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+  @media (max-width: 760px) { .duo { grid-template-columns: 1fr; } }
+  .duo .card.good-card { border-color: color-mix(in srgb, var(--good) 40%, var(--border)); }
+  .duo .card.bad-card { border-color: color-mix(in srgb, var(--bad) 40%, var(--border)); }
+
+  .exercise { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 22px 24px; box-shadow: var(--shadow); }
+  .exercise p { margin: 0 0 10px; }
+  details.answer { margin-top: 12px; }
+  details.answer summary {
+    cursor: pointer; font-weight: 700; color: var(--accent); font-size: 13.5px;
+    list-style: none; display: inline-flex; align-items: center; gap: 6px;
+  }
+  details.answer summary::-webkit-details-marker { display: none; }
+  details.answer summary::before { content: "▶"; font-size: 10px; transition: transform 0.25s ease; }
+  details.answer[open] summary::before { transform: rotate(90deg); }
+  details.answer .ans-body { margin-top: 10px; padding: 12px 14px; background: var(--bg-2); border-radius: 10px; font-size: 13.8px; animation: slideDown 0.35s ease; }
+  @keyframes slideDown { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
+
+  .quiz-card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 22px 24px; box-shadow: var(--shadow); margin-bottom: 16px; }
+  .quiz-q { font-weight: 700; margin: 0 0 12px; font-size: 15px; }
+  .quiz-opts { display: flex; flex-direction: column; gap: 8px; }
+  .quiz-opt {
+    display: flex; align-items: center; gap: 10px; padding: 10px 12px;
+    border: 1px solid var(--border); border-radius: 10px; cursor: pointer;
+    transition: border-color 0.2s ease, background 0.2s ease; font-size: 14px;
+  }
+  .quiz-opt:hover { border-color: var(--accent); }
+  .quiz-opt input { accent-color: var(--accent); }
+  .quiz-opt.correct { border-color: var(--good); background: var(--good-bg); }
+  .quiz-opt.wrong { border-color: var(--bad); background: var(--bad-bg); }
+  .quiz-feedback { margin-top: 10px; font-size: 13.5px; font-weight: 600; min-height: 18px; }
+  .quiz-feedback.good { color: var(--good); }
+  .quiz-feedback.bad { color: var(--bad); }
+
+  .quiz-actions { display: flex; align-items: center; gap: 14px; margin-top: 8px; }
+  .btn-primary {
+    font-family: inherit; font-weight: 700; font-size: 14px; cursor: pointer;
+    background: var(--accent); color: var(--accent-ink); border: none; border-radius: 10px;
+    padding: 11px 20px; transition: filter 0.2s ease, transform 0.15s ease;
+  }
+  .btn-primary:hover { filter: brightness(1.1); }
+  .btn-primary:active { transform: scale(0.97); }
+  #quiz-score { font-weight: 700; font-size: 14px; opacity: 0; }
+  #quiz-score.show { animation: slideDown 0.4s ease forwards; }
+
+  /* ---------- Live demo ---------- */
+  .demo { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 22px 24px; box-shadow: var(--shadow); display: flex; flex-direction: column; gap: 16px; }
+  .demo-row { display: flex; flex-wrap: wrap; gap: 14px; align-items: center; }
+  .demo-field { display: flex; flex-direction: column; gap: 6px; font-size: 12.5px; color: var(--muted); font-weight: 600; }
+  .demo-field input[type="range"] { accent-color: var(--accent); width: 220px; }
+  .demo-field input[type="text"] {
+    font-family: "JetBrains Mono", monospace; font-size: 13px; padding: 8px 10px;
+    border: 1px solid var(--border); border-radius: 8px; background: var(--bg-2); color: var(--ink); width: 260px;
+  }
+  .demo-out { display: flex; gap: 10px; flex-wrap: wrap; }
+  .demo-stat {
+    background: var(--bg-2); border: 1px solid var(--border); border-radius: 10px; padding: 10px 14px;
+    font-size: 13px; min-width: 130px; opacity: 0;
+  }
+  .demo-stat.in { animation: slideDown 0.35s ease forwards; }
+  .demo-stat b { display: block; font-size: 18px; font-family: "JetBrains Mono", monospace; margin-top: 2px; }
+
+  footer {
+    margin-top: 72px; padding-top: 24px; border-top: 1px solid var(--border);
+    color: var(--muted); font-size: 12.5px; display: flex; flex-wrap: wrap; gap: 8px 16px; justify-content: space-between;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
+  }
+</style>
+</head>
+<body>
+
+<button class="theme-toggle" id="themeToggle" type="button" aria-label="Đổi giao diện sáng/tối">🌓 Đổi giao diện</button>
+
+<header class="hero">
+  <div class="hero-inner">
+    <div class="eyebrow"><span class="dot"></span> AI-For-Beginners · Bài học ngẫu nhiên #OF-c4cf9012 · 22/08/2026</div>
+    <h1>Overfitting vs Underfitting: <em>Học Vừa Đủ Là Sao?</em></h1>
+    <p class="lede">
+      Model học "quá ít" thì đoán sai be bét, học "quá kỹ" thì lại học luôn cả... nhiễu.
+      Cùng một bộ dữ liệu, chỉ đổi độ phức tạp của model — kết quả trên
+      <b>tập train</b> và <b>tập test</b> lệch nhau một trời một vực. Hôm nay ta mổ xẻ 4 trạng thái đó.
+    </p>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <!-- 1. CONCEPT -->
+  <section>
+    <div class="section-head reveal">
+      <span class="section-num">01 · Khái niệm</span>
+      <h2>Bias-Variance Tradeoff: đường cong chữ U kinh điển</h2>
+      <p class="section-sub">
+        Trục ngang là <b>độ phức tạp model</b> (bậc đa thức), trục dọc là <b>lỗi (error)</b>.
+        Lỗi trên tập <span class="lo">train</span> luôn giảm khi model phức tạp hơn — nhưng lỗi trên tập
+        <span class="te">test</span> lại giảm rồi... tăng trở lại. Điểm đáy của đường test chính là
+        "vùng ngọt" ta muốn nhắm tới.
+      </p>
+    </div>
+    <div class="concept reveal">
+<pre>Error
+  9 │<span class="te">●</span>                                                  <span class="te">●</span>
+    │ <span class="te">╲</span>                                                <span class="te">╱</span>
+  6 │  <span class="te">╲</span>                                              <span class="te">╱</span>
+    │   <span class="te">╲</span>          <span class="hi">← vùng ngọt (test error thấp nhất)</span>  <span class="te">╱</span>
+  3 │    <span class="te">╲___</span>              <span class="te">●</span>              <span class="te">___╱</span>
+    │        <span class="te">╲●___●</span>                          <span class="te">╱</span>
+  0 │<span class="lo">●___●___●___●___●___●___●___●___●___●___●</span>  ← train error (giảm mãi)
+    └──────────────────────────────────────────────── độ phức tạp
+      bậc 1      bậc 2      bậc 3      bậc 5      bậc 9
+      <span class="lo">underfit</span>              <span class="hi">vừa đủ</span>              <span class="te">overfit</span></pre>
+    </div>
+  </section>
+
+  <!-- 2. FOUR STATES -->
+  <section>
+    <div class="section-head reveal">
+      <span class="section-num">02 · Bốn trạng thái của model</span>
+      <h2>Underfit · Vừa đủ · Overfit · Overfit + Regularization</h2>
+      <p class="section-sub">
+        Dữ liệu thật: <code>y = 0.6x² − 3x + 4 + nhiễu</code>, 8 điểm <span class="lo">train</span>
+        (x = 0…7) và 4 điểm <span class="te">test</span> giữ riêng (x = 0.5, 2.5, 4.5, 6.5) không cho model thấy khi huấn luyện.
+        Ta thử fit đa thức bậc khác nhau bằng least-squares thật (không bịa số).
+      </p>
+    </div>
+
+    <div class="grid">
+
+      <!-- UNDERFIT -->
+      <div class="card reveal">
+        <div class="card-top">
+          <p class="card-title"><span class="idx">01</span>Underfitting (bậc 1)</p>
+          <span class="badge bad">❌ High Bias</span>
+        </div>
+        <div class="ipo">
+          <span><b>Input:</b> 8 điểm train</span>
+          <span><b>Model:</b> đường thẳng y = a + bx</span>
+          <span><b>Output:</b> train MSE 7.45 · test MSE 5.69</span>
+        </div>
+        <div class="code-block"><span class="kw">from</span> numpy <span class="kw">import</span> polyfit
+coef = polyfit(X_train, y_train, deg=<span class="fn">1</span>)
+<span class="c1"># y = -0.0083 + 1.1595x -- gần như đường thẳng cứng nhắc</span></div>
+        <div class="canvas-wrap">
+          <canvas id="cv-under" width="600" height="160"></canvas>
+          <div class="canvas-controls">
+            <div class="legend"><span><i style="background:var(--path)"></i>train</span><span><i style="background:var(--test)"></i>test</span></div>
+            <button class="play-btn" data-target="under" type="button">▶ Vẽ đường fit</button>
+          </div>
+        </div>
+        <p class="verdict"><b>Đánh giá:</b> đường thẳng không đủ "uốn" theo hình parabol của dữ liệu → sai be bét ở <i>cả train lẫn test</i>. Đây là dấu hiệu kinh điển của <b>underfitting</b>: model quá đơn giản.</p>
+      </div>
+
+      <!-- GOOD FIT -->
+      <div class="card reveal">
+        <div class="card-top">
+          <p class="card-title"><span class="idx">02</span>Vừa đủ (bậc 3)</p>
+          <span class="badge good">✅ Cân bằng</span>
+        </div>
+        <div class="ipo">
+          <span><b>Input:</b> 8 điểm train</span>
+          <span><b>Model:</b> đa thức bậc 3</span>
+          <span><b>Output:</b> train MSE 0.25 · test MSE 0.13</span>
+        </div>
+        <div class="code-block">coef = polyfit(X_train, y_train, deg=<span class="fn">3</span>)
+<span class="c1"># train & test MSE đều thấp và GẦN NHAU -- dấu hiệu tốt</span></div>
+        <div class="canvas-wrap">
+          <canvas id="cv-good" width="600" height="160"></canvas>
+          <div class="canvas-controls">
+            <div class="legend"><span><i style="background:var(--path)"></i>train</span><span><i style="background:var(--test)"></i>test</span></div>
+            <button class="play-btn" data-target="good" type="button">▶ Vẽ đường fit</button>
+          </div>
+        </div>
+        <p class="verdict"><b>Đánh giá:</b> đường cong bám sát xu hướng dữ liệu thật mà không đuổi theo từng hạt nhiễu. Test MSE thậm chí thấp hơn train MSE một chút — bình thường với sample nhỏ, không phải dấu hiệu xấu.</p>
+      </div>
+
+      <!-- OVERFIT -->
+      <div class="card reveal">
+        <div class="card-top">
+          <p class="card-title"><span class="idx">03</span>Overfitting (bậc 7)</p>
+          <span class="badge bad">❌ High Variance</span>
+        </div>
+        <div class="ipo">
+          <span><b>Input:</b> 8 điểm train, 8 tham số</span>
+          <span><b>Model:</b> đa thức bậc 7 (gần khớp hết điểm)</span>
+          <span><b>Output:</b> train MSE 0.0000 · test MSE 5.78</span>
+        </div>
+        <div class="code-block">coef = polyfit(X_train, y_train, deg=<span class="fn">7</span>)
+<span class="c1"># train MSE ~ 0 (học thuộc lòng) nhưng test MSE tăng vọt!</span></div>
+        <div class="canvas-wrap">
+          <canvas id="cv-over" width="600" height="160"></canvas>
+          <div class="canvas-controls">
+            <div class="legend"><span><i style="background:var(--path)"></i>train</span><span><i style="background:var(--test)"></i>test</span></div>
+            <button class="play-btn" data-target="over" type="button">▶ Vẽ đường fit</button>
+          </div>
+        </div>
+        <p class="verdict"><b>Đánh giá:</b> đường cong ngoằn ngoèo đi xuyên qua <i>từng</i> điểm train (kể cả nhiễu), rồi "bay loạn" giữa các điểm test. Train MSE = 0 nhưng test MSE cao gấp 23 lần bậc 3 — <b>overfitting</b> điển hình.</p>
+      </div>
+
+      <!-- REGULARIZED -->
+      <div class="card reveal">
+        <div class="card-top">
+          <p class="card-title"><span class="idx">04</span>Overfit + Ridge (L2)</p>
+          <span class="badge warn">⚠️ Đỡ hơn nhưng chưa tối ưu</span>
+        </div>
+        <div class="ipo">
+          <span><b>Input:</b> vẫn đa thức bậc 7</span>
+          <span><b>Model:</b> phạt hệ số lớn (λ = 0.1)</span>
+          <span><b>Output:</b> train MSE 0.23 · test MSE 0.67</span>
+        </div>
+        <div class="code-block">coef = ridge_fit(X_train, y_train, deg=<span class="fn">7</span>, lam=<span class="fn">0.1</span>)
+<span class="c1"># loss += lam * sum(coef**2) -- ép hệ số nhỏ lại, đường mượt hơn</span></div>
+        <div class="canvas-wrap">
+          <canvas id="cv-reg" width="600" height="160"></canvas>
+          <div class="canvas-controls">
+            <div class="legend"><span><i style="background:var(--path)"></i>train</span><span><i style="background:var(--test)"></i>test</span></div>
+            <button class="play-btn" data-target="reg" type="button">▶ Vẽ đường fit</button>
+          </div>
+        </div>
+        <p class="verdict"><b>Đánh giá:</b> cùng bậc 7 nhưng thêm phạt L2 (Ridge) ép các hệ số về gần 0 → đường bớt "lượn sóng", test MSE giảm từ 5.78 xuống 0.67. Chưa bằng chọn đúng độ phức tạp (bậc 3), nhưng chứng minh regularization thật sự hoạt động.</p>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- 3. COMPARISON TABLE -->
+  <section>
+    <div class="section-head reveal">
+      <span class="section-num">03 · Tổng kết</span>
+      <h2>Bảng so sánh 4 trạng thái</h2>
+    </div>
+    <div class="cmp-scroll reveal">
+      <table class="cmp">
+        <thead>
+          <tr><th>Trạng thái</th><th>Input</th><th>Xử lý</th><th>Output</th><th>Đánh giá</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="state">Underfitting</td>
+            <td>Model quá đơn giản (bậc 1)</td>
+            <td>Không đủ tham số để "uốn" theo dữ liệu</td>
+            <td>Train MSE 7.45 · Test MSE 5.69 (cả 2 đều cao)</td>
+            <td><span class="badge bad">❌ High bias</span></td>
+          </tr>
+          <tr>
+            <td class="state">Vừa đủ</td>
+            <td>Model đúng độ phức tạp (bậc 3)</td>
+            <td>Bám xu hướng thật, bỏ qua nhiễu vụn</td>
+            <td>Train MSE 0.25 · Test MSE 0.13 (cả 2 đều thấp)</td>
+            <td><span class="badge good">✅ Generalize tốt</span></td>
+          </tr>
+          <tr>
+            <td class="state">Overfitting</td>
+            <td>Model quá phức tạp (bậc 7)</td>
+            <td>Học thuộc từng điểm, kể cả nhiễu</td>
+            <td>Train MSE 0.00 · Test MSE 5.78 (lệch nhau khủng)</td>
+            <td><span class="badge bad">❌ High variance</span></td>
+          </tr>
+          <tr>
+            <td class="state">Overfit + Ridge</td>
+            <td>Bậc 7 + phạt L2 (λ=0.1)</td>
+            <td>Ép hệ số nhỏ lại → đường mượt hơn</td>
+            <td>Train MSE 0.23 · Test MSE 0.67 (khoảng cách thu hẹp)</td>
+            <td><span class="badge warn">⚠️ Đỡ hơn, cần tune λ</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- 4. LIVE DEMO -->
+  <section>
+    <div class="section-head reveal">
+      <span class="section-num">04 · Demo tương tác</span>
+      <h2>Tự kéo λ (regularization) và xem test MSE đổi ra sao</h2>
+      <p class="section-sub">Model cố định ở bậc 7 (overfit). Kéo thanh trượt λ từ 0 → 5 để xem Ridge "ghì" model lại như thế nào — số liệu là kết quả fit thật, không phải giả lập ngẫu nhiên.</p>
+    </div>
+    <div class="demo reveal">
+      <div class="demo-row">
+        <div class="demo-field">
+          <label for="lamSlider">λ (regularization strength)</label>
+          <input type="range" id="lamSlider" min="0" max="4" step="1" value="0">
+        </div>
+        <button class="play-btn" id="demoRun" type="button">▶ Cập nhật</button>
+      </div>
+      <div class="demo-out" id="demoOut"></div>
+    </div>
+  </section>
+
+  <!-- 5. GOOD VS BAD DATA -->
+  <section>
+    <div class="section-head reveal">
+      <span class="section-num">05 · Thực tế</span>
+      <h2>Dữ liệu tốt vs dữ liệu xấu</h2>
+      <p class="section-sub">Overfitting không chỉ do model quá phức tạp — dữ liệu quá ít / quá nhiễu cũng là nguyên nhân chính.</p>
+    </div>
+    <div class="duo">
+      <div class="card good-card reveal">
+        <div class="card-top">
+          <p class="card-title">Dataset đủ lớn, nhiễu thấp</p>
+          <span class="badge good">✅ Model tổng quát tốt</span>
+        </div>
+        <div class="ipo">
+          <span><b>Ví dụ:</b> 50 000 ảnh chó/mèo, gán nhãn kỹ, đa dạng góc chụp/ánh sáng</span>
+        </div>
+        <p class="verdict">Nhiều dữ liệu đa dạng → model khó "học thuộc lòng" từng ảnh, buộc phải học đặc trưng thật (tai, lông, hình dáng) → generalize tốt trên ảnh mới.</p>
+      </div>
+      <div class="card bad-card reveal">
+        <div class="card-top">
+          <p class="card-title">Dataset nhỏ, nhiễu cao</p>
+          <span class="badge bad">❌ Dễ overfit</span>
+        </div>
+        <div class="ipo">
+          <span><b>Ví dụ:</b> 30 ảnh, một nửa bị gán nhãn sai, toàn chụp cùng 1 góc/1 nền</span>
+        </div>
+        <p class="verdict">Model chỉ có 30 mẫu để học nhưng có hàng triệu tham số (deep net) → dễ "nhớ" luôn cả nhãn sai và đặc điểm nền (background) thay vì đặc trưng con vật → thất bại thảm hại khi gặp ảnh thật.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 6. EXERCISE -->
+  <section>
+    <div class="section-head reveal">
+      <span class="section-num">06 · Bài tập nhỏ</span>
+      <h2>Đọc số liệu, chẩn đoán bệnh cho model</h2>
+    </div>
+    <div class="exercise reveal">
+      <p>
+        Model A: <code>train MSE = 0.05, test MSE = 4.20</code>. Model B: <code>train MSE = 3.10, test MSE = 3.40</code>.
+        Model nào overfit, model nào underfit? Nên xử lý mỗi model bằng cách nào?
+      </p>
+      <details class="answer">
+        <summary>Xem đáp án</summary>
+        <div class="ans-body">
+          <b>Model A</b>: train rất thấp nhưng test cao gấp 84 lần → <b>overfitting</b>. Xử lý: thêm regularization (L1/L2), giảm độ phức tạp model, thêm data, hoặc dùng dropout/early stopping.<br><br>
+          <b>Model B</b>: train và test đều cao và gần nhau → <b>underfitting</b>. Xử lý: tăng độ phức tạp model (thêm layer/feature), train lâu hơn, giảm regularization nếu đang áp dụng quá mạnh.
+        </div>
+      </details>
+    </div>
+  </section>
+
+  <!-- 7. QUIZ -->
+  <section>
+    <div class="section-head reveal">
+      <span class="section-num">07 · Tự kiểm tra</span>
+      <h2>Quiz nhanh (4 câu)</h2>
+    </div>
+
+    <form id="quizForm">
+      <div class="quiz-card reveal">
+        <p class="quiz-q">1. Dấu hiệu nào cho thấy model đang OVERFITTING?</p>
+        <div class="quiz-opts" data-correct="b">
+          <label class="quiz-opt"><input type="radio" name="q1" value="a"> Train error và test error đều cao, gần bằng nhau</label>
+          <label class="quiz-opt"><input type="radio" name="q1" value="b"> Train error rất thấp nhưng test error cao</label>
+          <label class="quiz-opt"><input type="radio" name="q1" value="c"> Train error và test error đều thấp, gần bằng nhau</label>
+        </div>
+        <div class="quiz-feedback"></div>
+      </div>
+
+      <div class="quiz-card reveal">
+        <p class="quiz-q">2. Underfitting thường xảy ra khi nào?</p>
+        <div class="quiz-opts" data-correct="a">
+          <label class="quiz-opt"><input type="radio" name="q2" value="a"> Model quá đơn giản so với độ phức tạp thật của dữ liệu</label>
+          <label class="quiz-opt"><input type="radio" name="q2" value="b"> Model có quá nhiều tham số so với dữ liệu</label>
+          <label class="quiz-opt"><input type="radio" name="q2" value="c"> Dataset quá lớn và đa dạng</label>
+        </div>
+        <div class="quiz-feedback"></div>
+      </div>
+
+      <div class="quiz-card reveal">
+        <p class="quiz-q">3. Regularization (L1/L2) giúp chống overfitting bằng cách nào?</p>
+        <div class="quiz-opts" data-correct="c">
+          <label class="quiz-opt"><input type="radio" name="q3" value="a"> Tăng số lượng tham số của model</label>
+          <label class="quiz-opt"><input type="radio" name="q3" value="b"> Xoá bớt dữ liệu train để model học nhanh hơn</label>
+          <label class="quiz-opt"><input type="radio" name="q3" value="c"> Phạt các hệ số lớn, ép model đơn giản/mượt hơn</label>
+        </div>
+        <div class="quiz-feedback"></div>
+      </div>
+
+      <div class="quiz-card reveal">
+        <p class="quiz-q">4. "Vùng ngọt" (sweet spot) trên đường cong bias-variance là gì?</p>
+        <div class="quiz-opts" data-correct="b">
+          <label class="quiz-opt"><input type="radio" name="q4" value="a"> Điểm mà train error thấp nhất, bất kể test error</label>
+          <label class="quiz-opt"><input type="radio" name="q4" value="b"> Điểm mà test error đạt giá trị thấp nhất</label>
+          <label class="quiz-opt"><input type="radio" name="q4" value="c"> Điểm mà model có nhiều tham số nhất</label>
+        </div>
+        <div class="quiz-feedback"></div>
+      </div>
+
+      <div class="quiz-actions reveal">
+        <button class="btn-primary" type="button" id="checkQuiz">Kiểm tra đáp án</button>
+        <span id="quiz-score"></span>
+      </div>
+    </form>
+  </section>
+
+  <footer>
+    <span>Chủ đề: Model Evaluation · AI-For-Beginners #OF-c4cf9012</span>
+    <span>Claude-lession · tự động tạo · 22/08/2026</span>
+  </footer>
+</div>
+
+<script>
+(function () {
+  var root = document.documentElement;
+  var themeBtn = document.getElementById('themeToggle');
+  themeBtn.addEventListener('click', function () {
+    var cur = root.getAttribute('data-theme');
+    var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    var effectiveDark = cur ? cur === 'dark' : prefersDark;
+    root.setAttribute('data-theme', effectiveDark ? 'light' : 'dark');
+  });
+
+  var els = document.querySelectorAll('.reveal');
+  var io = new IntersectionObserver(function (entries) {
+    entries.forEach(function (e) {
+      if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); }
+    });
+  }, { threshold: 0.12 });
+  els.forEach(function (el) { io.observe(el); });
+
+  // ---------- Real data (computed via least-squares, not fabricated) ----------
+  var X_train = [0,1,2,3,4,5,6,7];
+  var y_train = [4.3, 1.1, 1.2, 0.2, 2.2, 3.3, 8.0, 12.1];
+  var X_test  = [0.5, 2.5, 4.5, 6.5];
+  var y_test  = [2.85, -0.15, 3.15, 9.55];
+
+  var coefs = {
+    under: [-0.0083, 1.1595],
+    good:  [4.1076, -2.9821, 0.6016, -0.0015],
+    over:  [4.3, -26.7107, 50.3811, -39.3476, 15.2965, -3.1285, 0.3224, -0.0132],
+    reg:   [3.635, -1.6903, -0.5121, 0.107, 0.2634, -0.1183, 0.0187, -0.001] // deg7, ridge lam=0.1 (least-squares, exact)
+  };
+
+  function evalPoly(coef, x) {
+    var s = 0;
+    for (var p = 0; p < coef.length; p++) s += coef[p] * Math.pow(x, p);
+    return s;
+  }
+
+  // ---------- Canvas: data points + fitted curve ----------
+  function drawFit(ctx, w, h, coef, progress) {
+    ctx.clearRect(0, 0, w, h);
+    var xMin = -0.5, xMax = 7.5, yMin = -3, yMax = 14;
+    var padL = 8, padR = 8, padT = 10, padB = 14;
+    function X(xv) { return padL + (xv - xMin) / (xMax - xMin) * (w - padL - padR); }
+    function Y(yv) { return padT + (1 - (yv - yMin) / (yMax - yMin)) * (h - padT - padB); }
+
+    var css = getComputedStyle(document.documentElement);
+    var colorPath = css.getPropertyValue('--path').trim() || '#2f8fb0';
+    var colorTest = css.getPropertyValue('--test').trim() || '#d6685b';
+    var colorMuted = css.getPropertyValue('--muted').trim() || '#676c85';
+
+    // zero line
+    ctx.strokeStyle = colorMuted;
+    ctx.globalAlpha = 0.25;
+    ctx.beginPath();
+    ctx.moveTo(padL, Y(0));
+    ctx.lineTo(w - padR, Y(0));
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+
+    // fitted curve, drawn progressively left-to-right
+    var steps = 80;
+    var upto = Math.max(1, Math.floor(progress * steps));
+    ctx.beginPath();
+    ctx.lineWidth = 2.2;
+    ctx.strokeStyle = colorPath;
+    for (var i = 0; i <= upto; i++) {
+      var xv = xMin + (i / steps) * (xMax - xMin);
+      var yv = Math.max(yMin - 2, Math.min(yMax + 2, evalPoly(coef, xv)));
+      var x = X(xv), y = Y(yv);
+      if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+
+    // train points
+    X_train.forEach(function (xv, i) {
+      var x = X(xv), y = Y(y_train[i]);
+      ctx.beginPath();
+      ctx.fillStyle = colorPath;
+      ctx.arc(x, y, 4, 0, Math.PI * 2);
+      ctx.fill();
+    });
+
+    // test points (only fade in once curve mostly drawn)
+    var testAlpha = Math.max(0, Math.min(1, (progress - 0.5) * 2));
+    ctx.globalAlpha = testAlpha;
+    X_test.forEach(function (xv, i) {
+      var x = X(xv), y = Y(y_test[i]);
+      ctx.beginPath();
+      ctx.strokeStyle = colorTest;
+      ctx.lineWidth = 2;
+      ctx.moveTo(x - 5, y); ctx.lineTo(x + 5, y);
+      ctx.moveTo(x, y - 5); ctx.lineTo(x, y + 5);
+      ctx.stroke();
+    });
+    ctx.globalAlpha = 1;
+  }
+
+  function setupCanvas(canvasId, btnKey, coef) {
+    var canvas = document.getElementById(canvasId);
+    if (!canvas) return;
+    var dpr = window.devicePixelRatio || 1;
+    function resize() {
+      var rect = canvas.getBoundingClientRect();
+      canvas.width = rect.width * dpr;
+      canvas.height = rect.height * dpr;
+      var ctx = canvas.getContext('2d');
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
+    resize();
+    window.addEventListener('resize', resize);
+    var ctx = canvas.getContext('2d');
+
+    function frame(progress) {
+      var rect = canvas.getBoundingClientRect();
+      drawFit(ctx, rect.width, rect.height, coef, progress);
+    }
+    frame(1);
+
+    var playing = false;
+    var btn = document.querySelector('.play-btn[data-target="' + btnKey + '"]');
+    if (!btn) return;
+    btn.addEventListener('click', function () {
+      if (playing) return;
+      playing = true;
+      var reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      var duration = reduced ? 50 : 1400;
+      var start = null;
+      function step(ts) {
+        if (start === null) start = ts;
+        var p = Math.min(1, (ts - start) / duration);
+        frame(p);
+        if (p < 1) requestAnimationFrame(step); else playing = false;
+      }
+      requestAnimationFrame(step);
+    });
+  }
+
+  setupCanvas('cv-under', 'under', coefs.under);
+  setupCanvas('cv-good', 'good', coefs.good);
+  setupCanvas('cv-over', 'over', coefs.over);
+  setupCanvas('cv-reg', 'reg', coefs.reg);
+
+  // ---------- Live demo: ridge lambda slider ----------
+  // Precomputed real ridge-fit results for deg=7 at lambda = 0, 0.001, 0.1, 1, 5
+  var ridgeSteps = [
+    { lam: 0,     train: 0.0000, test: 5.7826 },
+    { lam: 0.001, train: 0.1071, test: 1.0151 },
+    { lam: 0.1,   train: 0.2344, test: 0.6714 },
+    { lam: 1,     train: 0.8063, test: 0.8217 },
+    { lam: 5,     train: 1.7224, test: 1.6324 }
+  ];
+  var slider = document.getElementById('lamSlider');
+  var demoOut = document.getElementById('demoOut');
+  var demoBtn = document.getElementById('demoRun');
+
+  function renderDemo() {
+    var step = ridgeSteps[Number(slider.value)];
+    var gap = (step.test - step.train).toFixed(3);
+    var verdict = step.test < 1 && Math.abs(step.test - step.train) < 0.6
+      ? '✅ khoảng cách hẹp'
+      : (step.lam === 0 ? '❌ overfit nặng' : '⚠️ đang cải thiện');
+    demoOut.innerHTML =
+      '<div class="demo-stat in">λ = <b>' + step.lam + '</b></div>' +
+      '<div class="demo-stat in">Train MSE<b>' + step.train.toFixed(4) + '</b></div>' +
+      '<div class="demo-stat in">Test MSE<b>' + step.test.toFixed(4) + '</b></div>' +
+      '<div class="demo-stat in">Khoảng cách train↔test<b>' + gap + '</b></div>' +
+      '<div class="demo-stat in">Chẩn đoán<b style="font-size:14px">' + verdict + '</b></div>';
+  }
+  slider.addEventListener('input', renderDemo);
+  demoBtn.addEventListener('click', renderDemo);
+  renderDemo();
+
+  // ---------- Quiz ----------
+  var quizGroups = document.querySelectorAll('.quiz-opts');
+  quizGroups.forEach(function (group) {
+    var opts = group.querySelectorAll('.quiz-opt');
+    opts.forEach(function (opt) {
+      opt.addEventListener('click', function () {
+        var fb = group.parentElement.querySelector('.quiz-feedback');
+        var input = opt.querySelector('input');
+        var correct = group.getAttribute('data-correct');
+        opts.forEach(function (o) { o.classList.remove('correct', 'wrong'); });
+        if (input.value === correct) {
+          opt.classList.add('correct');
+          fb.textContent = '✅ Chính xác!';
+          fb.className = 'quiz-feedback good';
+        } else {
+          opt.classList.add('wrong');
+          fb.textContent = '❌ Chưa đúng, thử lại nhé.';
+          fb.className = 'quiz-feedback bad';
+        }
+      });
+    });
+  });
+
+  document.getElementById('checkQuiz').addEventListener('click', function () {
+    var total = quizGroups.length;
+    var correctCount = 0;
+    quizGroups.forEach(function (group) {
+      var correct = group.getAttribute('data-correct');
+      var checked = group.querySelector('input:checked');
+      var opts = group.querySelectorAll('.quiz-opt');
+      opts.forEach(function (o) {
+        var v = o.querySelector('input').value;
+        o.classList.remove('correct', 'wrong');
+        if (v === correct) o.classList.add('correct');
+        else if (checked && v === checked.value) o.classList.add('wrong');
+      });
+      if (checked && checked.value === correct) correctCount++;
+    });
+    var scoreEl = document.getElementById('quiz-score');
+    scoreEl.textContent = 'Điểm của bạn: ' + correctCount + '/' + total;
+    scoreEl.className = 'show';
+  });
+})();
+</script>
+</body>
+</html>
