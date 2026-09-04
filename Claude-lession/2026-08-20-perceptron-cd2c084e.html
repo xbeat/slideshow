@@ -1,0 +1,1151 @@
+<title>Perceptron Từng Nhịp</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;600;800&family=Lora:ital,wght@0,400;0,500;1,400&family=JetBrains+Mono:wght@400;700&display=swap">
+
+<style>
+:root{
+  --paper:#F0F3F2;
+  --surface:#FFFFFF;
+  --surface-2:#E5EAE9;
+  --ink:#111719;
+  --ink-2:#48575C;
+  --ink-3:#7A898E;
+  --line:#D2DAD9;
+  --line-2:#BAC5C4;
+  --teal:#0F6273;
+  --teal-soft:#DAEBEF;
+  --gold:#8A5E00;
+  --gold-soft:#F5E9CE;
+  --danger:#A93526;
+  --danger-soft:#F6E1DD;
+  --ok:#256B4F;
+  --ok-soft:#DCEDE4;
+  --shadow:0 1px 2px rgba(17,23,25,.05), 0 8px 24px -12px rgba(17,23,25,.18);
+
+  --f-display:"Be Vietnam Pro",system-ui,"Segoe UI",sans-serif;
+  --f-body:"Lora",Georgia,"Times New Roman",serif;
+  --f-mono:"JetBrains Mono",ui-monospace,"SFMono-Regular",Consolas,monospace;
+
+  --step:clamp(.9rem,.86rem + .2vw,1rem);
+  --rail:min(1120px,92vw);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --paper:#0C1113;
+    --surface:#141B1E;
+    --surface-2:#1C2528;
+    --ink:#E7EDEC;
+    --ink-2:#A3B1B5;
+    --ink-3:#74858A;
+    --line:#283337;
+    --line-2:#3A4850;
+    --teal:#57C4DA;
+    --teal-soft:#0F2F38;
+    --gold:#DCAE4E;
+    --gold-soft:#372B11;
+    --danger:#E97A67;
+    --danger-soft:#3A1F1A;
+    --ok:#63C093;
+    --ok-soft:#12301F;
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 10px 30px -14px rgba(0,0,0,.7);
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#0C1113;
+  --surface:#141B1E;
+  --surface-2:#1C2528;
+  --ink:#E7EDEC;
+  --ink-2:#A3B1B5;
+  --ink-3:#74858A;
+  --line:#283337;
+  --line-2:#3A4850;
+  --teal:#57C4DA;
+  --teal-soft:#0F2F38;
+  --gold:#DCAE4E;
+  --gold-soft:#372B11;
+  --danger:#E97A67;
+  --danger-soft:#3A1F1A;
+  --ok:#63C093;
+  --ok-soft:#12301F;
+  --shadow:0 1px 2px rgba(0,0,0,.4), 0 10px 30px -14px rgba(0,0,0,.7);
+}
+
+*{box-sizing:border-box}
+body{
+  margin:0;
+  background:var(--paper);
+  color:var(--ink);
+  font-family:var(--f-body);
+  font-size:var(--step);
+  line-height:1.72;
+  -webkit-font-smoothing:antialiased;
+}
+h1,h2,h3,h4,.ui{font-family:var(--f-display);line-height:1.22;text-wrap:balance}
+code,pre,.mono,.num{font-family:var(--f-mono);font-variant-ligatures:none}
+.num{font-variant-numeric:tabular-nums}
+
+.wrap{width:var(--rail);margin-inline:auto}
+section{padding-block:clamp(2.6rem,5vw,4.2rem);border-top:1px solid var(--line)}
+section:first-of-type{border-top:0}
+
+/* ---------- header ---------- */
+header.hero{
+  background:var(--surface);
+  border-bottom:1px solid var(--line);
+  padding-block:clamp(2.4rem,6vw,4rem);
+  position:relative;
+  overflow:hidden;
+}
+header.hero::after{
+  content:"";position:absolute;inset:0;pointer-events:none;
+  background-image:linear-gradient(var(--line) 1px,transparent 1px),linear-gradient(90deg,var(--line) 1px,transparent 1px);
+  background-size:34px 34px;
+  opacity:.35;
+  mask-image:radial-gradient(120% 90% at 82% 40%,#000 0%,transparent 72%);
+}
+.hero .wrap{position:relative;z-index:1}
+.eyebrow{
+  font-family:var(--f-display);font-weight:600;font-size:.72rem;letter-spacing:.16em;
+  text-transform:uppercase;color:var(--teal);margin:0 0 .9rem;
+  display:flex;gap:.6rem;flex-wrap:wrap;align-items:center;
+}
+.eyebrow span.dot{width:5px;height:5px;border-radius:50%;background:var(--line-2);display:inline-block}
+h1{font-size:clamp(2.3rem,1.4rem + 4.2vw,4.1rem);font-weight:800;letter-spacing:-.03em;margin:0 0 .5rem}
+h1 em{font-style:normal;color:var(--teal)}
+.lede{font-size:clamp(1.02rem,.95rem + .5vw,1.25rem);color:var(--ink-2);max-width:60ch;margin:0}
+.hero-meta{display:flex;gap:1.6rem;flex-wrap:wrap;margin-top:1.8rem;padding-top:1.4rem;border-top:1px solid var(--line)}
+.hero-meta div{min-width:0}
+.hero-meta dt{font-family:var(--f-display);font-size:.66rem;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3);margin:0 0 .2rem}
+.hero-meta dd{margin:0;font-family:var(--f-display);font-weight:600;font-size:.95rem}
+
+h2{font-size:clamp(1.5rem,1.2rem + 1.2vw,2.1rem);font-weight:800;letter-spacing:-.02em;margin:0 0 .35rem}
+h2 .idx{color:var(--teal);font-size:.62em;vertical-align:.32em;margin-right:.5rem;letter-spacing:0}
+.sub{color:var(--ink-2);margin:0 0 2rem;max-width:66ch}
+h3{font-size:1.06rem;font-weight:700;margin:0 0 .5rem;letter-spacing:-.01em}
+p{max-width:68ch}
+
+/* ---------- generic blocks ---------- */
+.card{
+  background:var(--surface);border:1px solid var(--line);border-radius:10px;
+  padding:1.35rem 1.4rem;box-shadow:var(--shadow);
+}
+.grid{display:grid;gap:1.1rem}
+@media(min-width:820px){.grid.two{grid-template-columns:1fr 1fr}.grid.three{grid-template-columns:repeat(3,1fr)}}
+
+pre{
+  margin:0;background:var(--surface-2);border:1px solid var(--line);border-radius:8px;
+  padding:.95rem 1.05rem;overflow-x:auto;font-size:.8rem;line-height:1.65;color:var(--ink);
+}
+pre.ascii{line-height:1.35;font-size:.74rem;white-space:pre;color:var(--ink-2)}
+code:not(pre code){
+  background:var(--surface-2);border:1px solid var(--line);border-radius:4px;
+  padding:.08em .38em;font-size:.85em;
+}
+.k{color:var(--teal);font-weight:700}
+.c{color:var(--ink-3);font-style:italic}
+.s{color:var(--gold)}
+
+.tablewrap{overflow-x:auto;border:1px solid var(--line);border-radius:10px;background:var(--surface);box-shadow:var(--shadow)}
+table{border-collapse:collapse;width:100%;min-width:600px;font-size:.85rem}
+th,td{padding:.62rem .8rem;text-align:left;border-bottom:1px solid var(--line);vertical-align:top}
+thead th{
+  font-family:var(--f-display);font-weight:600;font-size:.66rem;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--ink-3);background:var(--surface-2);white-space:nowrap;
+}
+tbody tr:last-child td{border-bottom:0}
+td.mono,th.mono{font-family:var(--f-mono);font-variant-numeric:tabular-nums;font-size:.78rem}
+
+.tag{
+  display:inline-flex;align-items:center;gap:.32rem;white-space:nowrap;
+  font-family:var(--f-display);font-weight:600;font-size:.72rem;
+  padding:.14rem .5rem;border-radius:99px;border:1px solid transparent;
+}
+.tag.good{background:var(--ok-soft);color:var(--ok);border-color:var(--ok)}
+.tag.mid{background:var(--gold-soft);color:var(--gold);border-color:var(--gold)}
+.tag.bad{background:var(--danger-soft);color:var(--danger);border-color:var(--danger)}
+.tag.info{background:var(--teal-soft);color:var(--teal);border-color:var(--teal)}
+
+/* ---------- state cards ---------- */
+.state{
+  background:var(--surface);border:1px solid var(--line);border-radius:12px;overflow:hidden;
+  box-shadow:var(--shadow);display:flex;flex-direction:column;
+}
+.state.is-bad{border-color:color-mix(in srgb,var(--danger) 45%,var(--line))}
+.state.is-mid{border-color:color-mix(in srgb,var(--gold) 45%,var(--line))}
+.state.is-good{border-color:color-mix(in srgb,var(--ok) 55%,var(--line))}
+.state-head{
+  display:flex;justify-content:space-between;align-items:flex-start;gap:.8rem;
+  padding:.9rem 1.1rem;border-bottom:1px solid var(--line);background:var(--surface-2);
+}
+.state-head .id{font-family:var(--f-mono);font-size:.72rem;color:var(--ink-3);letter-spacing:.08em}
+.state-head h3{margin:.15rem 0 0}
+.state-body{padding:1.1rem;display:grid;gap:.9rem}
+.plot{
+  width:100%;aspect-ratio:4/3;display:block;border:1px solid var(--line);
+  border-radius:8px;background:var(--surface);
+}
+.readout{
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(88px,1fr));gap:.5rem;
+  font-family:var(--f-mono);font-size:.74rem;
+}
+.readout div{background:var(--surface-2);border:1px solid var(--line);border-radius:6px;padding:.4rem .55rem}
+.readout b{display:block;font-family:var(--f-display);font-size:.6rem;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);font-weight:600}
+.readout span{font-variant-numeric:tabular-nums;font-size:.86rem}
+
+/* ---------- interactive ---------- */
+.panel{
+  background:var(--surface);border:1px solid var(--line);border-radius:12px;
+  padding:1.3rem;box-shadow:var(--shadow);
+}
+.controls{display:flex;flex-wrap:wrap;gap:.7rem;align-items:flex-end}
+label.fld{display:flex;flex-direction:column;gap:.3rem;font-family:var(--f-display);font-size:.68rem;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);font-weight:600}
+input[type=number],input[type=text]{
+  font-family:var(--f-mono);font-size:.92rem;padding:.5rem .6rem;width:8.5rem;
+  background:var(--surface-2);color:var(--ink);border:1px solid var(--line-2);border-radius:7px;
+  font-variant-numeric:tabular-nums;
+}
+input[type=range]{accent-color:var(--teal);width:11rem}
+input:focus-visible,button:focus-visible,label:focus-within{outline:2px solid var(--teal);outline-offset:2px}
+button{
+  font-family:var(--f-display);font-weight:600;font-size:.86rem;cursor:pointer;
+  padding:.55rem 1.05rem;border-radius:7px;border:1px solid var(--teal);
+  background:var(--teal);color:var(--surface);
+  transition:transform .18s ease,filter .18s ease,background .18s ease;
+}
+:root[data-theme="dark"] button, :root:not([data-theme="light"]) button{color:#0C1113}
+@media (prefers-color-scheme:light){:root:not([data-theme="dark"]) button{color:#fff}}
+button:hover{filter:brightness(1.08);transform:translateY(-1px)}
+button:active{transform:translateY(0)}
+button.ghost{background:transparent;color:var(--teal);border-color:var(--line-2)}
+button.ghost:hover{border-color:var(--teal)}
+button[disabled]{opacity:.45;cursor:not-allowed;transform:none;filter:none}
+
+.result{
+  margin-top:1rem;border-left:3px solid var(--teal);background:var(--surface-2);
+  border-radius:0 8px 8px 0;padding:.85rem 1rem;font-family:var(--f-mono);font-size:.8rem;
+  animation:slideDown .42s cubic-bezier(.2,.7,.3,1) both;
+}
+.result.good{border-left-color:var(--ok)}
+.result.bad{border-left-color:var(--danger)}
+.result .big{font-family:var(--f-display);font-weight:800;font-size:1.15rem;display:block;margin-bottom:.25rem}
+
+/* ---------- flow ---------- */
+.flow{display:flex;align-items:center;gap:.55rem;flex-wrap:wrap;justify-content:center;padding:1.1rem 0}
+.node{
+  border:1px solid var(--line-2);border-radius:9px;background:var(--surface);
+  padding:.55rem .8rem;text-align:center;min-width:88px;box-shadow:var(--shadow);
+}
+.node b{display:block;font-family:var(--f-display);font-size:.62rem;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)}
+.node span{font-family:var(--f-mono);font-size:.84rem}
+.node.hot{border-color:var(--teal);background:var(--teal-soft);animation:pulse 2.4s ease-in-out infinite}
+.arrow{font-family:var(--f-mono);color:var(--teal);font-size:1.05rem;animation:slideArrow 2.4s ease-in-out infinite}
+.arrow:nth-of-type(2){animation-delay:.3s}
+.arrow:nth-of-type(3){animation-delay:.6s}
+.arrow:nth-of-type(4){animation-delay:.9s}
+
+/* ---------- quiz ---------- */
+.quiz{display:grid;gap:1rem}
+.q{border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:1.05rem 1.15rem;box-shadow:var(--shadow)}
+.q > p:first-child{margin:0 0 .7rem;font-family:var(--f-display);font-weight:600}
+.q .opts{display:grid;gap:.4rem}
+.q label{
+  display:flex;gap:.6rem;align-items:flex-start;padding:.45rem .6rem;border-radius:7px;
+  border:1px solid var(--line);cursor:pointer;transition:background .2s ease,border-color .2s ease;font-size:.9rem;
+}
+.q label:hover{background:var(--surface-2);border-color:var(--line-2)}
+.q input[type=radio]{margin-top:.35rem;accent-color:var(--teal);flex:none}
+.q label.right{border-color:var(--ok);background:var(--ok-soft)}
+.q label.wrong{border-color:var(--danger);background:var(--danger-soft)}
+.fb{margin-top:.7rem;font-size:.85rem;color:var(--ink-2);animation:slideDown .38s ease both}
+.fb strong{font-family:var(--f-display)}
+.score{
+  font-family:var(--f-display);font-weight:800;font-size:1.05rem;
+  padding:.7rem 1rem;border-radius:9px;background:var(--teal-soft);color:var(--teal);
+  border:1px solid var(--teal);animation:slideDown .4s ease both;
+}
+
+/* ---------- misc ---------- */
+ul.clean{padding-left:1.1rem;margin:.4rem 0}
+ul.clean li{margin-bottom:.35rem}
+.callout{
+  border-left:3px solid var(--gold);background:var(--gold-soft);
+  padding:.85rem 1.05rem;border-radius:0 8px 8px 0;color:var(--ink);font-size:.9rem;
+}
+.callout p{margin:0;max-width:none}
+footer{border-top:1px solid var(--line);padding-block:2.2rem;color:var(--ink-3);font-size:.8rem}
+footer .wrap{display:flex;justify-content:space-between;gap:1rem;flex-wrap:wrap;font-family:var(--f-display)}
+
+/* ---------- animations ---------- */
+@keyframes fadeInDown{from{opacity:0;transform:translateY(-16px)}to{opacity:1;transform:none}}
+@keyframes slideUp{from{opacity:0;transform:translateY(22px)}to{opacity:1;transform:none}}
+@keyframes slideDown{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:none}}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 color-mix(in srgb,var(--teal) 40%,transparent)}50%{box-shadow:0 0 0 8px transparent}}
+@keyframes slideArrow{0%,100%{transform:translateX(0);opacity:.45}50%{transform:translateX(4px);opacity:1}}
+.hero .eyebrow,.hero h1,.hero .lede,.hero .hero-meta{animation:fadeInDown .7s cubic-bezier(.2,.7,.3,1) both}
+.hero h1{animation-delay:.06s}
+.hero .lede{animation-delay:.13s}
+.hero .hero-meta{animation-delay:.2s}
+.rise{opacity:0}
+.rise.in{animation:slideUp .6s cubic-bezier(.2,.7,.3,1) both}
+.rise.in:nth-child(2){animation-delay:.09s}
+.rise.in:nth-child(3){animation-delay:.18s}
+.rise.in:nth-child(4){animation-delay:.27s}
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important}
+  .rise{opacity:1}
+}
+</style>
+
+<header class="hero">
+  <div class="wrap">
+    <p class="eyebrow">AI-For-Beginners <span class="dot"></span> Bài ngẫu nhiên #cd2c084e <span class="dot"></span> Neural Networks</p>
+    <h1>Perceptron <em>từng nhịp</em></h1>
+    <p class="lede">Một nơ-ron duy nhất, hai con số đầu vào, một đường thẳng chia đôi thế giới. Ta sẽ xem đường thẳng đó <strong>sai như thế nào</strong>, <strong>xoay ra sao</strong>, và <strong>khi nào nó chịu thua</strong>.</p>
+    <dl class="hero-meta">
+      <div><dt>Bài toán</dt><dd>Phân loại cam chín / chưa chín</dd></div>
+      <div><dt>Số trạng thái</dt><dd>4 trạng thái huấn luyện</dd></div>
+      <div><dt>Độ khó</dt><dd>Người mới bắt đầu</dd></div>
+      <div><dt>Thời lượng</dt><dd>~20 phút</dd></div>
+    </dl>
+  </div>
+</header>
+
+<!-- ============ 1. ĐỊNH NGHĨA ============ -->
+<section>
+  <div class="wrap">
+    <h2><span class="idx">01</span>Perceptron là gì?</h2>
+    <p class="sub">Nói dân dã: nó là <strong>một cái cân có ngưỡng</strong>. Bạn ném vài con số vào, mỗi con số có một "sức nặng" riêng, cộng hết lại — nặng quá ngưỡng thì kêu <em>"Có!"</em>, nhẹ hơn thì im lặng <em>"Không"</em>.</p>
+
+    <div class="grid two">
+      <div class="card rise">
+        <h3>Công thức tối giản</h3>
+        <pre class="mono">z = w₁·x₁ + w₂·x₂ + b     <span class="c"># tổng có trọng số</span>
+ŷ = 1 nếu z &gt; 0, ngược lại 0   <span class="c"># hàm ngưỡng (step)</span></pre>
+        <p style="font-size:.86rem;color:var(--ink-2);margin-bottom:0">
+          <code>w</code> = trọng số (feature này quan trọng cỡ nào),
+          <code>b</code> = bias (ngưỡng dễ/khó nói "Có"),
+          <code>z</code> = điểm số thô, <code>ŷ</code> = dự đoán.
+        </p>
+      </div>
+
+      <div class="card rise">
+        <h3>Sơ đồ một nơ-ron</h3>
+        <pre class="ascii">   x₁ ──(w₁)──┐
+              ├──▶ Σ  ──▶ [ z &gt; 0 ? ] ──▶ ŷ ∈ {0,1}
+   x₂ ──(w₂)──┤          ngưỡng
+              │
+    1 ──(b )──┘
+                        ▲
+                        │  sai thì sửa:
+                   w ← w + lr·(y − ŷ)·x</pre>
+      </div>
+    </div>
+
+    <div class="flow" aria-label="Luồng xử lý của perceptron">
+      <div class="node"><b>Input</b><span>x₁, x₂</span></div>
+      <span class="arrow">──▶</span>
+      <div class="node"><b>Nhân trọng số</b><span>w·x</span></div>
+      <span class="arrow">──▶</span>
+      <div class="node hot"><b>Cộng + bias</b><span>z</span></div>
+      <span class="arrow">──▶</span>
+      <div class="node"><b>Ngưỡng</b><span>z &gt; 0 ?</span></div>
+      <span class="arrow">──▶</span>
+      <div class="node"><b>Output</b><span>ŷ = 0 / 1</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 2. DỮ LIỆU ============ -->
+<section>
+  <div class="wrap">
+    <h2><span class="idx">02</span>Bài toán thực tế: băng chuyền phân loại cam</h2>
+    <p class="sub">Một nhà máy đóng gói cam đặt camera + cảm biến trên băng chuyền. Mỗi quả cam cho ra 2 con số. Máy phải quyết định trong 40 mili-giây: <strong>đóng thùng bán</strong> hay <strong>trả lại kho ủ thêm</strong>.</p>
+
+    <div class="grid two">
+      <div class="card rise">
+        <h3>Hai đặc trưng (features)</h3>
+        <ul class="clean" style="font-size:.9rem">
+          <li><code>x₁</code> — <strong>độ ngọt</strong> đo bằng khúc xạ kế, đơn vị Brix (6 → 14).</li>
+          <li><code>x₂</code> — <strong>độ vàng vỏ</strong> chấm từ ảnh camera (0 → 10).</li>
+        </ul>
+        <h3 style="margin-top:1rem">Nhãn (label)</h3>
+        <ul class="clean" style="font-size:.9rem">
+          <li><span class="tag good">y = 1</span> cam chín, đóng thùng.</li>
+          <li><span class="tag bad">y = 0</span> chưa chín, ủ thêm.</li>
+        </ul>
+      </div>
+      <div class="card rise">
+        <h3>14 quả cam đã dán nhãn tay</h3>
+        <div class="tablewrap" style="box-shadow:none;border:0">
+          <table style="min-width:0">
+            <thead><tr><th>#</th><th class="mono">x₁ Brix</th><th class="mono">x₂ Vàng</th><th>y</th><th>#</th><th class="mono">x₁ Brix</th><th class="mono">x₂ Vàng</th><th>y</th></tr></thead>
+            <tbody>
+              <tr><td>1</td><td class="mono">12.0</td><td class="mono">8.0</td><td><span class="tag good">1</span></td><td>8</td><td class="mono">7.0</td><td class="mono">3.0</td><td><span class="tag bad">0</span></td></tr>
+              <tr><td>2</td><td class="mono">13.0</td><td class="mono">9.0</td><td><span class="tag good">1</span></td><td>9</td><td class="mono">8.0</td><td class="mono">4.0</td><td><span class="tag bad">0</span></td></tr>
+              <tr><td>3</td><td class="mono">11.0</td><td class="mono">7.5</td><td><span class="tag good">1</span></td><td>10</td><td class="mono">6.5</td><td class="mono">2.5</td><td><span class="tag bad">0</span></td></tr>
+              <tr><td>4</td><td class="mono">12.5</td><td class="mono">6.8</td><td><span class="tag good">1</span></td><td>11</td><td class="mono">9.0</td><td class="mono">3.5</td><td><span class="tag bad">0</span></td></tr>
+              <tr><td>5</td><td class="mono">13.5</td><td class="mono">7.2</td><td><span class="tag good">1</span></td><td>12</td><td class="mono">7.5</td><td class="mono">5.0</td><td><span class="tag bad">0</span></td></tr>
+              <tr><td>6</td><td class="mono">11.5</td><td class="mono">9.0</td><td><span class="tag good">1</span></td><td>13</td><td class="mono">8.5</td><td class="mono">2.0</td><td><span class="tag bad">0</span></td></tr>
+              <tr><td>7</td><td class="mono">14.0</td><td class="mono">8.5</td><td><span class="tag good">1</span></td><td>14</td><td class="mono">6.0</td><td class="mono">4.5</td><td><span class="tag bad">0</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="callout rise" style="margin-top:1.1rem">
+      <p><strong>Bước bắt buộc trước khi train:</strong> Brix chạy 6→14, độ vàng chạy 2→9. Hai thang đo lệch nhau ⇒ perceptron sẽ lắc lư mãi không hội tụ. Ta <strong>chuẩn hoá z-score</strong>: <code>z = (x − mean) / std</code>. Với bộ này: mean = (10.00, 5.75), std = (2.69, 2.43). Đây chính là ranh giới "dữ liệu tốt vs dữ liệu xấu" ở mục 06.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 3. BỐN TRẠNG THÁI ============ -->
+<section>
+  <div class="wrap">
+    <h2><span class="idx">03</span>Bốn trạng thái của đường ranh giới</h2>
+    <p class="sub">Cùng một model, cùng một bộ dữ liệu — chỉ khác nhau ở <strong>bộ trọng số w, b</strong>. Mỗi ô dưới đây là một ảnh chụp tại một thời điểm huấn luyện. Chấm <span style="color:var(--gold);font-weight:700">◆ vàng</span> = cam chín (y=1), chấm <span style="color:var(--teal);font-weight:700">● xanh</span> = chưa chín (y=0). Chấm bị <strong>viền đỏ</strong> = model đoán sai.</p>
+
+    <div class="grid two" id="stateGrid">
+      <article class="state is-bad rise" data-w1="-0.90" data-w2="-0.60" data-b="0.80">
+        <div class="state-head">
+          <div><div class="id">T0 · EPOCH 0</div><h3>Khởi tạo ngẫu nhiên</h3></div>
+          <span class="tag bad">❌ Xấu</span>
+        </div>
+        <div class="state-body">
+          <canvas class="plot" width="480" height="360" aria-label="Đường ranh giới lúc khởi tạo, cắt sai hoàn toàn"></canvas>
+          <div class="readout">
+            <div><b>w₁</b><span>−0.90</span></div>
+            <div><b>w₂</b><span>−0.60</span></div>
+            <div><b>b</b><span>+0.80</span></div>
+            <div><b>Đúng</b><span>1/14</span></div>
+          </div>
+          <p style="margin:0;font-size:.86rem;color:var(--ink-2)">Trọng số bốc ngẫu nhiên nên đường thẳng nằm sai phe hoàn toàn: hầu như <strong>mọi quả cam đều bị gán nhầm</strong>. 7% chính xác — còn tệ hơn tung đồng xu.</p>
+          <pre>w = <span class="k">np</span>.array([-0.90, -0.60]); b = 0.80  <span class="c"># random</span></pre>
+        </div>
+      </article>
+
+      <article class="state is-mid rise" data-w1="-0.296" data-w2="-0.054" data-b="0.70">
+        <div class="state-head">
+          <div><div class="id">T1 · EPOCH 1</div><h3>Sau một vòng dữ liệu</h3></div>
+          <span class="tag mid">⚠️ Trung bình</span>
+        </div>
+        <div class="state-body">
+          <canvas class="plot" width="480" height="360" aria-label="Đường ranh giới sau 1 epoch, đã xoay nhưng vẫn cắt sai một nửa"></canvas>
+          <div class="readout">
+            <div><b>w₁</b><span>−0.296</span></div>
+            <div><b>w₂</b><span>−0.054</span></div>
+            <div><b>b</b><span>+0.70</span></div>
+            <div><b>Đúng</b><span>7/14</span></div>
+          </div>
+          <p style="margin:0;font-size:.86rem;color:var(--ink-2)">12 lần sửa sai trong epoch này đã kéo <code>w</code> từ âm sâu về gần 0. Đường thẳng đang <strong>xoay đúng hướng</strong> nhưng chưa tới. 50% — hoà đồng xu.</p>
+          <pre><span class="c"># mỗi lần sai: w ← w + lr·(y − ŷ)·x</span>
+lr = <span class="s">0.05</span>; số lần sửa = <span class="s">12</span></pre>
+        </div>
+      </article>
+
+      <article class="state is-good rise" data-w1="0.168" data-w2="0.379" data-b="0.20">
+        <div class="state-head">
+          <div><div class="id">T2 · EPOCH 3</div><h3>Hội tụ</h3></div>
+          <span class="tag good">✅ Tốt</span>
+        </div>
+        <div class="state-body">
+          <canvas class="plot" width="480" height="360" aria-label="Đường ranh giới sau 3 epoch, chia đúng toàn bộ"></canvas>
+          <div class="readout">
+            <div><b>w₁</b><span>+0.168</span></div>
+            <div><b>w₂</b><span>+0.379</span></div>
+            <div><b>b</b><span>+0.20</span></div>
+            <div><b>Đúng</b><span>14/14</span></div>
+          </div>
+          <p style="margin:0;font-size:.86rem;color:var(--ink-2)">Cả hai trọng số đã thành dương — hợp lý: <strong>càng ngọt, càng vàng thì càng chín</strong>. Epoch 4 chạy hết mà không sửa lần nào ⇒ dừng. 100%.</p>
+          <pre><span class="k">if</span> so_lan_sai == <span class="s">0</span>:
+    <span class="k">break</span>  <span class="c"># định lý hội tụ Rosenblatt (1958)</span></pre>
+        </div>
+      </article>
+
+      <article class="state is-bad rise" data-xor="1">
+        <div class="state-head">
+          <div><div class="id">T3 · XOR</div><h3>Dữ liệu không tách tuyến tính</h3></div>
+          <span class="tag bad">❌ Bó tay</span>
+        </div>
+        <div class="state-body">
+          <canvas class="plot" width="480" height="360" aria-label="Bài toán XOR, không đường thẳng nào chia đúng"></canvas>
+          <div class="readout">
+            <div><b>Điểm</b><span>4</span></div>
+            <div><b>Epoch</b><span>∞</span></div>
+            <div><b>Đúng tối đa</b><span>3/4</span></div>
+            <div><b>Hội tụ</b><span>KHÔNG</span></div>
+          </div>
+          <p style="margin:0;font-size:.86rem;color:var(--ink-2)">Hai lớp cài răng lược. <strong>Không tồn tại đường thẳng nào</strong> chia đúng cả 4 điểm — perceptron sẽ chạy mãi mãi. Đây là lý do năm 1969 ngành AI đóng băng, và là lý do ta cần <strong>nhiều lớp</strong> (MLP).</p>
+          <pre>XOR: (0,0)→0  (0,1)→1  (1,0)→1  (1,1)→0
+<span class="c"># cần ≥1 hidden layer mới giải được</span></pre>
+        </div>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 4. BẢNG SO SÁNH ============ -->
+<section>
+  <div class="wrap">
+    <h2><span class="idx">04</span>Bảng so sánh 4 trạng thái</h2>
+    <p class="sub">Đọc theo hàng: cùng INPUT, khác XỬ LÝ, ra khác OUTPUT.</p>
+    <div class="tablewrap rise">
+      <table>
+        <thead>
+          <tr><th>Trạng thái</th><th>Input</th><th>Xử lý</th><th>Output</th><th>Đánh giá</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>T0</strong> Khởi tạo</td>
+            <td class="mono">14 quả cam<br>w ngẫu nhiên</td>
+            <td class="mono">z = −0.9x₁ −0.6x₂ +0.8<br>→ step</td>
+            <td class="mono">1/14 đúng<br>(7%)</td>
+            <td><span class="tag bad">❌ Vô dụng</span></td>
+          </tr>
+          <tr>
+            <td><strong>T1</strong> 1 epoch</td>
+            <td class="mono">14 quả cam<br>+ 12 lần sửa</td>
+            <td class="mono">w ← w + 0.05·(y−ŷ)·x<br>lặp 14 mẫu</td>
+            <td class="mono">7/14 đúng<br>(50%)</td>
+            <td><span class="tag mid">⚠️ Đang học</span></td>
+          </tr>
+          <tr>
+            <td><strong>T2</strong> Hội tụ</td>
+            <td class="mono">14 quả cam<br>× 3 epoch</td>
+            <td class="mono">lặp đến khi<br>sai = 0</td>
+            <td class="mono">14/14 đúng<br>(100%)</td>
+            <td><span class="tag good">✅ Dùng được</span></td>
+          </tr>
+          <tr>
+            <td><strong>T3</strong> XOR</td>
+            <td class="mono">4 điểm<br>cài răng lược</td>
+            <td class="mono">lặp vô hạn<br>w dao động</td>
+            <td class="mono">3/4 đúng<br>(75%, kẹt)</td>
+            <td><span class="tag bad">❌ Cần MLP</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="grid two" style="margin-top:1.1rem">
+      <div class="card rise">
+        <h3>Ưu điểm</h3>
+        <ul class="clean" style="font-size:.88rem">
+          <li>Cực nhanh: <code>O(n·d)</code> mỗi epoch, chỉ toàn phép nhân–cộng.</li>
+          <li>Bộ nhớ <code>O(d)</code> — chỉ giữ đúng d+1 con số.</li>
+          <li>Học online: dữ liệu tới đâu cập nhật tới đó, không cần giữ cả bộ.</li>
+          <li>Có <strong>bảo đảm toán học</strong>: tách tuyến tính ⇒ chắc chắn hội tụ sau hữu hạn bước.</li>
+        </ul>
+      </div>
+      <div class="card rise">
+        <h3>Nhược điểm</h3>
+        <ul class="clean" style="font-size:.88rem">
+          <li>Chỉ vẽ được <strong>một đường thẳng</strong> — chết với XOR, hình vành khăn, xoắn ốc.</li>
+          <li>Không có xác suất: chỉ trả 0/1, không biết "chắc 90%" hay "đoán bừa".</li>
+          <li>Đường ranh giới <strong>không tối ưu</strong> — dừng ngay khi hết sai, dễ sát mép (SVM sửa điểm này).</li>
+          <li>Dữ liệu chưa chuẩn hoá hoặc có nhiễu nhãn ⇒ lắc vô hạn.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 5. HUẤN LUYỆN TRỰC TIẾP ============ -->
+<section>
+  <div class="wrap">
+    <h2><span class="idx">05</span>Chạy thử: huấn luyện từng epoch</h2>
+    <p class="sub">Bấm <strong>▶ Chạy 1 epoch</strong> để xem đường thẳng nhích từng bước, hoặc <strong>⏩ Chạy tới hội tụ</strong> để xem nó tự dừng. Chỉnh <code>learning rate</code> để thấy học nhanh/chậm khác nhau ra sao.</p>
+
+    <div class="panel rise">
+      <div class="controls" style="margin-bottom:1rem">
+        <button id="btnStep">▶ Chạy 1 epoch</button>
+        <button id="btnRun" class="ghost">⏩ Chạy tới hội tụ</button>
+        <button id="btnReset" class="ghost">↻ Đặt lại</button>
+        <label class="fld">Learning rate
+          <span style="display:flex;align-items:center;gap:.5rem">
+            <input type="range" id="lr" min="0.01" max="0.5" step="0.01" value="0.05">
+            <span class="mono num" id="lrVal" style="font-size:.85rem">0.05</span>
+          </span>
+        </label>
+      </div>
+
+      <div class="grid two">
+        <canvas id="livePlot" class="plot" width="480" height="360" aria-label="Biểu đồ huấn luyện trực tiếp"></canvas>
+        <div>
+          <div class="readout" style="grid-template-columns:repeat(2,1fr)">
+            <div><b>Epoch</b><span id="oEp">0</span></div>
+            <div><b>Số lần sửa</b><span id="oErr">—</span></div>
+            <div><b>w₁</b><span id="oW1">−0.900</span></div>
+            <div><b>w₂</b><span id="oW2">−0.600</span></div>
+            <div><b>b</b><span id="oB">+0.800</span></div>
+            <div><b>Độ chính xác</b><span id="oAcc">1/14</span></div>
+          </div>
+          <pre style="margin-top:.9rem"><span class="k">for</span> epoch <span class="k">in</span> <span class="k">range</span>(max_epochs):
+    sai = <span class="s">0</span>
+    <span class="k">for</span> x, y <span class="k">in</span> data:
+        z  = w @ x + b
+        yh = <span class="s">1</span> <span class="k">if</span> z &gt; <span class="s">0</span> <span class="k">else</span> <span class="s">0</span>
+        e  = y - yh
+        <span class="k">if</span> e != <span class="s">0</span>:
+            w += lr * e * x   <span class="c"># kéo đường về phía điểm sai</span>
+            b += lr * e
+            sai += <span class="s">1</span>
+    <span class="k">if</span> sai == <span class="s">0</span>: <span class="k">break</span>   <span class="c"># hội tụ</span></pre>
+        </div>
+      </div>
+      <div id="trainMsg"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 6. DỮ LIỆU TỐT VS XẤU ============ -->
+<section>
+  <div class="wrap">
+    <h2><span class="idx">06</span>Dữ liệu tốt vs dữ liệu xấu</h2>
+    <p class="sub">Perceptron không "thông minh" — nó chỉ phản chiếu dữ liệu bạn đưa. 80% lỗi của người mới nằm ở đây, không nằm ở model.</p>
+
+    <div class="tablewrap rise">
+      <table>
+        <thead><tr><th>Vấn đề</th><th>Ví dụ data cam</th><th>Hậu quả</th><th>Cách sửa</th><th>Mức</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><strong>Sạch &amp; chuẩn hoá</strong></td>
+            <td class="mono">Brix z-score: −1.5→1.5<br>Vàng z-score: −1.5→1.3</td>
+            <td>Hội tụ sau 3 epoch</td>
+            <td>Giữ nguyên</td>
+            <td><span class="tag good">✅</span></td>
+          </tr>
+          <tr>
+            <td><strong>Lệch thang đo</strong></td>
+            <td class="mono">Brix 6→14 (thô)<br>Vàng 2→9 (thô)</td>
+            <td>Chạy 30 epoch vẫn 7/14 — w lắc qua lắc lại</td>
+            <td><code>StandardScaler()</code> trước khi train</td>
+            <td><span class="tag mid">⚠️</span></td>
+          </tr>
+          <tr>
+            <td><strong>Nhiễu nhãn</strong></td>
+            <td class="mono">Quả #3 (11.0, 7.5)<br>dán nhầm y = 0</td>
+            <td>Không bao giờ hội tụ, vòng lặp vô hạn</td>
+            <td>Đặt <code>max_epochs</code>, giữ w tốt nhất, rà lại nhãn</td>
+            <td><span class="tag bad">❌</span></td>
+          </tr>
+          <tr>
+            <td><strong>Mất cân bằng</strong></td>
+            <td class="mono">13 quả chín<br>1 quả chưa chín</td>
+            <td>Đoán "chín" hết vẫn được 93% — vô dụng</td>
+            <td>Dùng precision/recall thay accuracy, oversample</td>
+            <td><span class="tag bad">❌</span></td>
+          </tr>
+          <tr>
+            <td><strong>Rò rỉ đặc trưng</strong></td>
+            <td class="mono">Thêm cột "đã_đóng_thùng"</td>
+            <td>Train 100%, ra sản xuất sập ngay</td>
+            <td>Bỏ mọi cột sinh ra <em>sau</em> thời điểm dự đoán</td>
+            <td><span class="tag bad">❌</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="grid two" style="margin-top:1.1rem">
+      <div class="card rise">
+        <h3>Nhìn bằng ASCII: thang đo lệch</h3>
+        <pre class="ascii">CHƯA CHUẨN HOÁ (xấu)          ĐÃ CHUẨN HOÁ (tốt)
+x₂ 9│      ◆ ◆                x₂ 1.3│        ◆ ◆
+   7│    ● ◆◆                     0.3│      ◆◆
+   5│  ●                          -0.3│  ●
+   3│ ●●●                        -1.5│ ●●●
+    └──────────                      └──────────
+     6   10   14                    -1.5  0   1.5
+   x₁ rộng 8 đơn vị              cả hai ≈ 3 đơn vị
+   ⇒ w₁ bị x₁ áp đảo             ⇒ hai trục nói cùng
+   ⇒ đường lắc mãi                  "ngôn ngữ" ⇒ hội tụ</pre>
+      </div>
+      <div class="card rise">
+        <h3>Nhìn bằng ASCII: nhiễu nhãn</h3>
+        <pre class="ascii">MỘT NHÃN SAI = VÒNG LẶP VÔ HẠN
+
+     ◆ ◆ ◆
+   ●←── điểm này thật ra là ◆
+  ● ● ●          nhưng dán nhãn ●
+
+epoch 1: đường xoay sang trái  ✗
+epoch 2: đường xoay sang phải  ✗
+epoch 3: đường xoay sang trái  ✗
+   ...   mãi mãi, sai = 1
+
+FIX: max_epochs=100 + lưu w có
+     accuracy cao nhất (pocket
+     algorithm)</pre>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 7. DEMO DỰ ĐOÁN ============ -->
+<section>
+  <div class="wrap">
+    <h2><span class="idx">07</span>Demo: thả một quả cam vào máy</h2>
+    <p class="sub">Dùng bộ trọng số đã hội tụ ở T2. Nhập độ ngọt và độ vàng, xem toàn bộ phép tính từ input tới output.</p>
+
+    <div class="panel rise">
+      <div class="controls">
+        <label class="fld">x₁ · Độ ngọt (Brix)
+          <input type="number" id="inX1" value="12.4" step="0.1" min="0" max="20">
+        </label>
+        <label class="fld">x₂ · Độ vàng (0–10)
+          <input type="number" id="inX2" value="7.6" step="0.1" min="0" max="10">
+        </label>
+        <button id="btnPredict">Dự đoán</button>
+        <button id="btnRandom" class="ghost">🎲 Cam ngẫu nhiên</button>
+      </div>
+      <div id="predOut"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 8. BÀI TẬP + QUIZ ============ -->
+<section>
+  <div class="wrap">
+    <h2><span class="idx">08</span>Bài tập nhỏ &amp; tự kiểm tra</h2>
+
+    <div class="grid two" style="margin-bottom:1.6rem">
+      <div class="card rise">
+        <h3>Bài tập 1 — Tính tay (5 phút)</h3>
+        <p style="font-size:.88rem;margin:0 0 .6rem">Cho <code>w = [0.168, 0.379]</code>, <code>b = 0.20</code> (đã chuẩn hoá), một quả cam có z-score <code>x = [0.74, 0.93]</code>.</p>
+        <ul class="clean" style="font-size:.88rem">
+          <li>a) Tính <code>z</code>.</li>
+          <li>b) <code>ŷ</code> bằng bao nhiêu?</li>
+          <li>c) Nhãn thật là <code>y = 1</code>. Perceptron có cập nhật <code>w</code> không? Vì sao?</li>
+        </ul>
+        <details style="margin-top:.6rem;font-size:.86rem;color:var(--ink-2)">
+          <summary style="cursor:pointer;font-family:var(--f-display);font-weight:600;color:var(--teal)">Xem đáp án</summary>
+          <p style="margin:.5rem 0 0">a) z = 0.168·0.74 + 0.379·0.93 + 0.20 = 0.124 + 0.353 + 0.20 = <strong>0.677</strong>.<br>
+          b) z &gt; 0 ⇒ <strong>ŷ = 1</strong>.<br>
+          c) <strong>Không</strong>. Vì e = y − ŷ = 1 − 1 = 0, nên <code>w += lr·0·x</code> = không đổi. Perceptron chỉ học từ lỗi.</p>
+        </details>
+      </div>
+
+      <div class="card rise">
+        <h3>Bài tập 2 — Viết code (15 phút)</h3>
+        <p style="font-size:.88rem;margin:0 0 .6rem">Cài <code>Perceptron</code> từ đầu, không dùng sklearn:</p>
+        <pre><span class="k">class</span> Perceptron:
+    <span class="k">def</span> __init__(self, lr=<span class="s">0.05</span>, epochs=<span class="s">100</span>):
+        ...
+    <span class="k">def</span> fit(self, X, y):
+        <span class="c"># TODO: chuẩn hoá X, lặp, cập nhật</span>
+        <span class="c"># TODO: return self.history (list số lần sai)</span>
+    <span class="k">def</span> predict(self, X):
+        ...</pre>
+        <p style="font-size:.86rem;color:var(--ink-2);margin:.6rem 0 0">Yêu cầu thêm: vẽ <code>history</code> bằng matplotlib — bạn phải thấy đường số-lần-sai đi xuống rồi chạm 0. Sau đó thử đổi 1 nhãn thành sai và xem đường đó <em>không bao giờ</em> chạm 0.</p>
+      </div>
+    </div>
+
+    <h3 style="font-size:1.2rem;margin-bottom:.9rem">Quiz — 4 câu</h3>
+    <div class="quiz" id="quiz"></div>
+    <div style="margin-top:1.1rem;display:flex;gap:.7rem;flex-wrap:wrap;align-items:center">
+      <button id="btnCheck">Chấm điểm</button>
+      <button id="btnRetry" class="ghost">Làm lại</button>
+      <div id="scoreBox"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 9. GHI CHÚ BẢN CHẤT ============ -->
+<section>
+  <div class="wrap">
+    <h2><span class="idx">09</span>Ghi chú bản chất &amp; độ phức tạp</h2>
+    <div class="grid three">
+      <div class="card rise">
+        <h3>Bản chất</h3>
+        <p style="font-size:.88rem;margin:0;color:var(--ink-2)">Perceptron học <strong>một siêu phẳng</strong>. Vector <code>w</code> chính là <em>pháp tuyến</em> của mặt phẳng đó; <code>b</code> đẩy mặt phẳng xa/gần gốc toạ độ. Cập nhật <code>w += lr·e·x</code> nghĩa là "xoay pháp tuyến nghiêng về phía điểm vừa đoán sai".</p>
+      </div>
+      <div class="card rise">
+        <h3>Độ phức tạp</h3>
+        <ul class="clean" style="font-size:.88rem;margin:0">
+          <li>Train: <code>O(E · n · d)</code></li>
+          <li>Predict: <code>O(d)</code></li>
+          <li>Bộ nhớ: <code>O(d)</code></li>
+          <li>Số lần sai bị chặn: <code>(R/γ)²</code> với γ = biên tách</li>
+        </ul>
+      </div>
+      <div class="card rise">
+        <h3>Đi tiếp đâu?</h3>
+        <ul class="clean" style="font-size:.88rem;margin:0">
+          <li>Đổi step → sigmoid ⇒ <strong>Logistic Regression</strong> (có xác suất)</li>
+          <li>Tối đa hoá biên ⇒ <strong>SVM</strong></li>
+          <li>Xếp chồng nhiều lớp ⇒ <strong>MLP</strong>, giải được XOR</li>
+          <li>Thêm backprop ⇒ toàn bộ Deep Learning</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <span>Claude-lession · Perceptron · mã bài #cd2c084e</span>
+    <span>Nguồn cảm hứng: AI-For-Beginners — Introduction to Neural Networks</span>
+  </div>
+</footer>
+
+<script>
+(function(){
+  "use strict";
+
+  /* ---------- dữ liệu ---------- */
+  var RAW = [
+    [12,8,1],[13,9,1],[11,7.5,1],[12.5,6.8,1],[13.5,7.2,1],[11.5,9,1],[14,8.5,1],
+    [7,3,0],[8,4,0],[6.5,2.5,0],[9,3.5,0],[7.5,5,0],[8.5,2,0],[6,4.5,0]
+  ];
+  var M = [10.00, 5.75], S = [2.69, 2.43];
+  var Z = RAW.map(function(r){ return [(r[0]-M[0])/S[0], (r[1]-M[1])/S[1], r[2]]; });
+  var XOR = [[0,0,0],[0,1,1],[1,0,1],[1,1,0]];
+  var INIT = {w1:-0.90, w2:-0.60, b:0.80};
+  var FINAL = {w1:0.168, w2:0.379, b:0.20};
+
+  function css(name){
+    return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+  }
+  function predict(w1,w2,b,x1,x2){ return (w1*x1 + w2*x2 + b) > 0 ? 1 : 0; }
+  function correct(w1,w2,b,set){
+    var n=0;
+    for(var i=0;i<set.length;i++){ if(predict(w1,w2,b,set[i][0],set[i][1])===set[i][2]) n++; }
+    return n;
+  }
+
+  /* ---------- vẽ ---------- */
+  function drawPlot(canvas, w1, w2, b, set, range){
+    var ctx = canvas.getContext('2d');
+    var dpr = window.devicePixelRatio || 1;
+    var cw = canvas.clientWidth || 480;
+    var ch = cw * 0.75;
+    canvas.width = Math.round(cw*dpr);
+    canvas.height = Math.round(ch*dpr);
+    canvas.style.height = ch + 'px';
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+
+    var pad = 30;
+    var C = {
+      bg: css('--surface'), line: css('--line'), line2: css('--line-2'),
+      ink3: css('--ink-3'), teal: css('--teal'), gold: css('--gold'),
+      danger: css('--danger'), tealSoft: css('--teal-soft'), goldSoft: css('--gold-soft')
+    };
+    ctx.clearRect(0,0,cw,ch);
+    ctx.fillStyle = C.bg; ctx.fillRect(0,0,cw,ch);
+
+    var x0=range[0], x1r=range[1], y0=range[2], y1r=range[3];
+    function px(x){ return pad + (x - x0)/(x1r-x0) * (cw - pad*2); }
+    function py(y){ return ch - pad - (y - y0)/(y1r-y0) * (ch - pad*2); }
+
+    /* lưới */
+    ctx.strokeStyle = C.line; ctx.lineWidth = 1;
+    for(var g=0; g<=4; g++){
+      var gx = pad + g*(cw-pad*2)/4, gy = pad + g*(ch-pad*2)/4;
+      ctx.beginPath(); ctx.moveTo(gx,pad); ctx.lineTo(gx,ch-pad); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(pad,gy); ctx.lineTo(cw-pad,gy); ctx.stroke();
+    }
+    ctx.strokeStyle = C.line2; ctx.lineWidth = 1.4;
+    ctx.strokeRect(pad,pad,cw-pad*2,ch-pad*2);
+
+    /* vùng quyết định + ranh giới */
+    if(w1 !== null){
+      var pts = [];
+      if(Math.abs(w2) > 1e-9){
+        pts.push([x0, -(w1*x0 + b)/w2]);
+        pts.push([x1r, -(w1*x1r + b)/w2]);
+      } else if(Math.abs(w1) > 1e-9){
+        pts.push([-b/w1, y0]); pts.push([-b/w1, y1r]);
+      }
+      if(pts.length === 2){
+        ctx.save();
+        ctx.beginPath(); ctx.rect(pad,pad,cw-pad*2,ch-pad*2); ctx.clip();
+        /* tô nhẹ phía dự đoán = 1 */
+        var big = 4000;
+        var nx = w1, ny = w2, len = Math.hypot(nx,ny) || 1;
+        var mx = (px(pts[0][0])+px(pts[1][0]))/2, my = (py(pts[0][1])+py(pts[1][1]))/2;
+        var dirx = (nx/len)*big, diry = -(ny/len)*big;
+        ctx.beginPath();
+        ctx.moveTo(px(pts[0][0]), py(pts[0][1]));
+        ctx.lineTo(px(pts[1][0]), py(pts[1][1]));
+        ctx.lineTo(px(pts[1][0])+dirx, py(pts[1][1])+diry);
+        ctx.lineTo(px(pts[0][0])+dirx, py(pts[0][1])+diry);
+        ctx.closePath();
+        ctx.fillStyle = C.goldSoft; ctx.globalAlpha = .75; ctx.fill(); ctx.globalAlpha = 1;
+        void mx; void my;
+        /* đường */
+        ctx.beginPath();
+        ctx.moveTo(px(pts[0][0]), py(pts[0][1]));
+        ctx.lineTo(px(pts[1][0]), py(pts[1][1]));
+        ctx.strokeStyle = C.ink3; ctx.lineWidth = 2.2; ctx.setLineDash([7,5]); ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.restore();
+      }
+    }
+
+    /* điểm */
+    for(var i=0;i<set.length;i++){
+      var p = set[i];
+      var X = px(p[0]), Y = py(p[1]);
+      var ok = (w1 === null) ? true : (predict(w1,w2,b,p[0],p[1]) === p[2]);
+      ctx.beginPath();
+      if(p[2] === 1){
+        ctx.moveTo(X, Y-7); ctx.lineTo(X+7, Y); ctx.lineTo(X, Y+7); ctx.lineTo(X-7, Y);
+        ctx.closePath();
+        ctx.fillStyle = C.gold;
+      } else {
+        ctx.arc(X, Y, 6, 0, Math.PI*2);
+        ctx.fillStyle = C.teal;
+      }
+      ctx.fill();
+      if(!ok){
+        ctx.strokeStyle = C.danger; ctx.lineWidth = 2.5;
+        ctx.beginPath(); ctx.arc(X, Y, 11, 0, Math.PI*2); ctx.stroke();
+      }
+    }
+
+    /* nhãn trục */
+    ctx.fillStyle = C.ink3;
+    ctx.font = '11px "JetBrains Mono", monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('x₁ →', cw/2, ch - 9);
+    ctx.save();
+    ctx.translate(11, ch/2); ctx.rotate(-Math.PI/2);
+    ctx.fillText('x₂ →', 0, 0);
+    ctx.restore();
+  }
+
+  var ZRANGE = [-2.0, 2.0, -2.0, 2.0];
+  var XRANGE = [-0.5, 1.5, -0.5, 1.5];
+
+  /* ---------- state cards ---------- */
+  var cards = [];
+  Array.prototype.forEach.call(document.querySelectorAll('#stateGrid .state'), function(el){
+    var cv = el.querySelector('canvas');
+    if(el.dataset.xor){
+      cards.push(function(){ drawPlot(cv, 1.0, 1.0, -0.5, XOR, XRANGE); });
+    } else {
+      var w1 = parseFloat(el.dataset.w1), w2 = parseFloat(el.dataset.w2), b = parseFloat(el.dataset.b);
+      cards.push(function(){ drawPlot(cv, w1, w2, b, Z, ZRANGE); });
+    }
+  });
+
+  /* ---------- huấn luyện trực tiếp ---------- */
+  var live = document.getElementById('livePlot');
+  var st = {w1:INIT.w1, w2:INIT.w2, b:INIT.b, ep:0, err:null, done:false};
+  var timer = null;
+
+  function fmt(v){ return (v >= 0 ? '+' : '−') + Math.abs(v).toFixed(3); }
+
+  function renderLive(){
+    drawPlot(live, st.w1, st.w2, st.b, Z, ZRANGE);
+    document.getElementById('oEp').textContent = st.ep;
+    document.getElementById('oErr').textContent = st.err === null ? '—' : st.err;
+    document.getElementById('oW1').textContent = fmt(st.w1);
+    document.getElementById('oW2').textContent = fmt(st.w2);
+    document.getElementById('oB').textContent = fmt(st.b);
+    document.getElementById('oAcc').textContent = correct(st.w1,st.w2,st.b,Z) + '/14';
+  }
+
+  function epoch(){
+    if(st.done) return 0;
+    var lr = parseFloat(document.getElementById('lr').value);
+    var err = 0;
+    for(var i=0;i<Z.length;i++){
+      var x1 = Z[i][0], x2 = Z[i][1], y = Z[i][2];
+      var yh = predict(st.w1, st.w2, st.b, x1, x2);
+      var e = y - yh;
+      if(e !== 0){
+        err++;
+        st.w1 += lr*e*x1; st.w2 += lr*e*x2; st.b += lr*e;
+      }
+    }
+    st.ep++; st.err = err;
+    var msg = document.getElementById('trainMsg');
+    if(err === 0){
+      st.done = true;
+      msg.innerHTML = '<div class="result good"><span class="big">✅ Hội tụ sau ' + st.ep + ' epoch</span>' +
+        'Một vòng trọn không phải sửa lần nào ⇒ dừng. w = [' + st.w1.toFixed(3) + ', ' + st.w2.toFixed(3) + '], b = ' + st.b.toFixed(3) + ' — 14/14 đúng.</div>';
+      document.getElementById('btnStep').disabled = true;
+      document.getElementById('btnRun').disabled = true;
+    } else if(st.ep >= 60){
+      st.done = true;
+      msg.innerHTML = '<div class="result bad"><span class="big">⚠️ Dừng ở epoch 60</span>Vẫn còn ' + err + ' lần sửa. Learning rate quá lớn nên w nhảy vọt qua lại — thử hạ lr xuống.</div>';
+      document.getElementById('btnStep').disabled = true;
+      document.getElementById('btnRun').disabled = true;
+    } else {
+      msg.innerHTML = '<div class="result"><span class="big">Epoch ' + st.ep + ' — đã sửa ' + err + ' lần</span>' +
+        'Độ chính xác hiện tại: ' + correct(st.w1,st.w2,st.b,Z) + '/14. Đường thẳng đang xoay — chạy tiếp.</div>';
+    }
+    renderLive();
+    return err;
+  }
+
+  document.getElementById('btnStep').addEventListener('click', function(){ epoch(); });
+  document.getElementById('btnRun').addEventListener('click', function(){
+    if(timer) return;
+    timer = setInterval(function(){
+      epoch();
+      if(st.done){ clearInterval(timer); timer = null; }
+    }, 420);
+  });
+  document.getElementById('btnReset').addEventListener('click', function(){
+    if(timer){ clearInterval(timer); timer = null; }
+    st = {w1:INIT.w1, w2:INIT.w2, b:INIT.b, ep:0, err:null, done:false};
+    document.getElementById('btnStep').disabled = false;
+    document.getElementById('btnRun').disabled = false;
+    document.getElementById('trainMsg').innerHTML = '';
+    renderLive();
+  });
+  document.getElementById('lr').addEventListener('input', function(e){
+    document.getElementById('lrVal').textContent = parseFloat(e.target.value).toFixed(2);
+  });
+
+  /* ---------- demo dự đoán ---------- */
+  function doPredict(){
+    var x1 = parseFloat(document.getElementById('inX1').value);
+    var x2 = parseFloat(document.getElementById('inX2').value);
+    var out = document.getElementById('predOut');
+    if(isNaN(x1) || isNaN(x2)){
+      out.innerHTML = '<div class="result bad"><span class="big">Thiếu số</span>Nhập cả hai đặc trưng bằng số thực nhé.</div>';
+      return;
+    }
+    var z1 = (x1 - M[0])/S[0], z2 = (x2 - M[1])/S[1];
+    var z = FINAL.w1*z1 + FINAL.w2*z2 + FINAL.b;
+    var yh = z > 0 ? 1 : 0;
+    out.innerHTML =
+      '<div class="result ' + (yh ? 'good' : 'bad') + '">' +
+      '<span class="big">' + (yh ? '✅ CAM CHÍN — đóng thùng' : '⚠️ CHƯA CHÍN — ủ thêm') + '</span>' +
+      'x  = (' + x1.toFixed(1) + ', ' + x2.toFixed(1) + ')  thô<br>' +
+      'z-score = (' + z1.toFixed(3) + ', ' + z2.toFixed(3) + ')<br>' +
+      'z  = 0.168×' + z1.toFixed(3) + ' + 0.379×' + z2.toFixed(3) + ' + 0.200 = <strong>' + z.toFixed(3) + '</strong><br>' +
+      'ŷ  = ' + (z > 0 ? 'z &gt; 0 ⇒ <strong>1</strong>' : 'z ≤ 0 ⇒ <strong>0</strong>') +
+      '</div>';
+  }
+  document.getElementById('btnPredict').addEventListener('click', doPredict);
+  document.getElementById('btnRandom').addEventListener('click', function(){
+    document.getElementById('inX1').value = (5.5 + Math.random()*9).toFixed(1);
+    document.getElementById('inX2').value = (1.5 + Math.random()*8).toFixed(1);
+    doPredict();
+  });
+  document.getElementById('inX1').addEventListener('keydown', function(e){ if(e.key === 'Enter') doPredict(); });
+  document.getElementById('inX2').addEventListener('keydown', function(e){ if(e.key === 'Enter') doPredict(); });
+
+  /* ---------- quiz ---------- */
+  var QS = [
+    {
+      q: '1. Perceptron cập nhật trọng số khi nào?',
+      o: ['Sau mỗi epoch, dựa trên tổng lỗi',
+          'Mỗi khi dự đoán sai một mẫu (y − ŷ ≠ 0)',
+          'Mỗi mẫu, bất kể đúng hay sai',
+          'Chỉ khi độ chính xác giảm'],
+      a: 1,
+      why: 'Đúng: e = y − ŷ. Nếu đoán đúng thì e = 0, phép cộng lr·0·x không đổi gì. Perceptron chỉ học từ lỗi — khác với gradient descent của logistic regression, vốn cập nhật cả khi đoán đúng nhưng chưa chắc.'
+    },
+    {
+      q: '2. Bộ dữ liệu XOR làm perceptron thất bại vì sao?',
+      o: ['Quá ít mẫu (chỉ 4 điểm)',
+          'Các giá trị chưa được chuẩn hoá',
+          'Không tồn tại đường thẳng nào chia đúng hai lớp',
+          'Learning rate mặc định quá nhỏ'],
+      a: 2,
+      why: 'XOR không tách tuyến tính: hai lớp cài răng lược ở 4 góc. Dù thêm bao nhiêu dữ liệu hay chỉnh lr thế nào cũng vô ích — phải thêm hidden layer (MLP) để bẻ cong không gian.'
+    },
+    {
+      q: '3. Brix chạy 6→14 còn độ vàng chạy 2→9. Bỏ thẳng vào perceptron thì sao?',
+      o: ['Không sao, perceptron tự chuẩn hoá',
+          'Huấn luyện lắc lư và hội tụ rất chậm hoặc không hội tụ',
+          'Model sẽ bị overfit',
+          'Kết quả giống hệt như khi chuẩn hoá'],
+      a: 1,
+      why: 'Thực nghiệm trên chính bộ 14 quả này: không chuẩn hoá thì sau 30 epoch vẫn 7/14; chuẩn hoá z-score thì hội tụ 100% sau 3 epoch. Feature có biên độ lớn sẽ áp đảo bước cập nhật.'
+    },
+    {
+      q: '4. Trong 14 quả cam, 13 quả chín và 1 quả chưa. Model luôn đoán "chín". Đánh giá sao?',
+      o: ['Tốt — accuracy 93%',
+          'Accuracy vô nghĩa ở đây; phải xem precision/recall của lớp hiếm',
+          'Phải tăng số epoch',
+          'Phải đổi sang hàm sigmoid'],
+      a: 1,
+      why: 'Dữ liệu mất cân bằng làm accuracy đánh lừa. Model này có recall = 0% với lớp "chưa chín" — đúng cái lớp nhà máy cần bắt. Dùng confusion matrix, F1, hoặc oversample lớp hiếm.'
+    }
+  ];
+
+  var quizEl = document.getElementById('quiz');
+  function buildQuiz(){
+    quizEl.innerHTML = '';
+    QS.forEach(function(item, qi){
+      var d = document.createElement('div');
+      d.className = 'q';
+      var html = '<p>' + item.q + '</p><div class="opts">';
+      item.o.forEach(function(opt, oi){
+        html += '<label><input type="radio" name="q' + qi + '" value="' + oi + '"><span>' + opt + '</span></label>';
+      });
+      html += '</div>';
+      d.innerHTML = html;
+      quizEl.appendChild(d);
+    });
+    document.getElementById('scoreBox').innerHTML = '';
+  }
+  buildQuiz();
+
+  document.getElementById('btnCheck').addEventListener('click', function(){
+    var score = 0, unanswered = 0;
+    var qs = quizEl.querySelectorAll('.q');
+    QS.forEach(function(item, qi){
+      var block = qs[qi];
+      var old = block.querySelector('.fb');
+      if(old) old.remove();
+      var labels = block.querySelectorAll('label');
+      var picked = -1;
+      Array.prototype.forEach.call(labels, function(l, li){
+        l.classList.remove('right','wrong');
+        if(l.querySelector('input').checked) picked = li;
+      });
+      if(picked === -1){ unanswered++; }
+      labels[item.a].classList.add('right');
+      if(picked !== -1 && picked !== item.a) labels[picked].classList.add('wrong');
+      if(picked === item.a) score++;
+      var fb = document.createElement('div');
+      fb.className = 'fb';
+      fb.innerHTML = '<strong>' + (picked === item.a ? '✅ Đúng. ' : '❌ Đáp án: ' + item.o[item.a] + '. ') + '</strong>' + item.why;
+      block.appendChild(fb);
+    });
+    var verdict = score === 4 ? '🏆 Hoàn hảo — bạn nắm bản chất rồi.'
+                : score >= 3 ? '👍 Khá vững — đọc lại mục 06 là tròn.'
+                : score >= 2 ? '📚 Được rồi — xem lại mục 03 và 06.'
+                : '🔁 Chạy lại demo ở mục 05 rồi quay lại quiz nhé.';
+    document.getElementById('scoreBox').innerHTML =
+      '<div class="score">' + score + '/4 · ' + verdict + (unanswered ? ' (bỏ trống ' + unanswered + ' câu)' : '') + '</div>';
+  });
+  document.getElementById('btnRetry').addEventListener('click', buildQuiz);
+
+  /* ---------- vẽ lại khi đổi theme / resize ---------- */
+  function redrawAll(){
+    cards.forEach(function(f){ f(); });
+    renderLive();
+  }
+  redrawAll();
+
+  var rt;
+  window.addEventListener('resize', function(){
+    clearTimeout(rt);
+    rt = setTimeout(redrawAll, 150);
+  });
+  if(window.matchMedia){
+    var mq = window.matchMedia('(prefers-color-scheme: dark)');
+    if(mq.addEventListener) mq.addEventListener('change', redrawAll);
+    else if(mq.addListener) mq.addListener(redrawAll);
+  }
+  new MutationObserver(redrawAll).observe(document.documentElement, {attributes:true, attributeFilter:['data-theme']});
+
+  /* ---------- reveal ---------- */
+  var io = new IntersectionObserver(function(entries){
+    entries.forEach(function(en){
+      if(en.isIntersecting){ en.target.classList.add('in'); io.unobserve(en.target); }
+    });
+  }, {threshold:0.12});
+  Array.prototype.forEach.call(document.querySelectorAll('.rise'), function(el){ io.observe(el); });
+})();
+</script>

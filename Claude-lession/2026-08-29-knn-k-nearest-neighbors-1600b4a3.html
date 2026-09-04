@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>K-Nearest Neighbors — Học AI/ML dễ hiểu</title>
+<style>
+  :root{
+    --bg:#f6f7fb; --bg2:#ffffff; --text:#1c1f2b; --muted:#5b6072;
+    --accent:#5b5ff0; --accent2:#00b894; --warn:#f0a500; --bad:#e0455a;
+    --border:#e3e5ef; --card:#ffffff; --code-bg:#1c1f2b; --code-text:#e8eaf6;
+    --shadow: 0 8px 24px rgba(30,32,60,0.08);
+  }
+  [data-theme="dark"]{
+    --bg:#12131c; --bg2:#181a26; --text:#eceefb; --muted:#a2a6c2;
+    --accent:#8b8ffb; --accent2:#3ddc97; --warn:#ffc233; --bad:#ff6b7d;
+    --border:#2a2d40; --card:#1c1e2c; --code-bg:#0d0e16; --code-text:#dfe2f7;
+    --shadow: 0 8px 28px rgba(0,0,0,0.45);
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; font-family:"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+    background:var(--bg); color:var(--text); transition:background .4s ease,color .4s ease;
+    line-height:1.6;
+  }
+  .wrap{max-width:960px; margin:0 auto; padding:20px 16px 80px;}
+  header.hero{
+    text-align:center; padding:36px 20px; border-radius:20px;
+    background:linear-gradient(135deg,var(--accent),#9b8cff);
+    color:#fff; box-shadow:var(--shadow);
+    animation: fadeInDown .7s ease both;
+    position:relative;
+  }
+  header.hero h1{margin:0 0 8px; font-size:clamp(22px,4vw,34px);}
+  header.hero p{margin:0; opacity:.92; font-size:15px;}
+  .topbar{display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:14px;}
+  .badge{
+    display:inline-block; background:rgba(255,255,255,.18); padding:4px 12px;
+    border-radius:999px; font-size:12px; letter-spacing:.5px; margin-bottom:10px;
+  }
+  button.toggle{
+    background:var(--card); color:var(--text); border:1px solid var(--border);
+    padding:8px 14px; border-radius:999px; cursor:pointer; font-size:13px;
+    box-shadow:var(--shadow); transition:transform .25s ease, background .3s ease;
+  }
+  button.toggle:hover{transform:translateY(-2px);}
+  section{
+    background:var(--card); border:1px solid var(--border); border-radius:16px;
+    padding:22px 20px; margin-top:22px; box-shadow:var(--shadow);
+    animation: slideUp .6s ease both;
+  }
+  section h2{margin-top:0; font-size:20px; display:flex; align-items:center; gap:8px;}
+  section h2 .num{
+    background:var(--accent); color:#fff; width:28px; height:28px; border-radius:50%;
+    display:inline-flex; align-items:center; justify-content:center; font-size:14px; flex:none;
+  }
+  p{color:var(--text);}
+  .muted{color:var(--muted);}
+  code, pre{font-family:"Fira Code",Consolas,monospace;}
+  pre{
+    background:var(--code-bg); color:var(--code-text); padding:14px 16px; border-radius:12px;
+    overflow-x:auto; font-size:13px; line-height:1.55;
+  }
+  code.inline{background:var(--code-bg); color:var(--code-text); padding:2px 6px; border-radius:6px; font-size:.9em;}
+  table{width:100%; border-collapse:collapse; margin:12px 0; font-size:14px; overflow-x:auto; display:block;}
+  table thead, table tbody{width:100%;}
+  th,td{border:1px solid var(--border); padding:8px 10px; text-align:left; vertical-align:top;}
+  th{background:var(--bg); color:var(--muted); font-weight:600;}
+  .grade-good{color:var(--accent2); font-weight:700;}
+  .grade-ok{color:var(--warn); font-weight:700;}
+  .grade-bad{color:var(--bad); font-weight:700;}
+  .state-card{
+    border:1px dashed var(--border); border-radius:14px; padding:16px; margin:14px 0;
+    background:var(--bg); animation: slideUp .5s ease both;
+  }
+  .state-card h3{margin:0 0 6px; font-size:16px; display:flex; align-items:center; gap:8px; flex-wrap:wrap;}
+  .pill{font-size:11px; padding:3px 10px; border-radius:999px; font-weight:700;}
+  .pill.good{background:rgba(0,184,148,.15); color:var(--accent2);}
+  .pill.ok{background:rgba(240,165,0,.15); color:var(--warn);}
+  .pill.bad{background:rgba(224,69,90,.15); color:var(--bad);}
+  .ascii{
+    background:var(--code-bg); color:var(--code-text); padding:14px; border-radius:12px;
+    font-family:"Fira Code",Consolas,monospace; font-size:12.5px; white-space:pre; overflow-x:auto;
+  }
+  .grid2{display:grid; grid-template-columns:1fr; gap:14px;}
+  @media(min-width:720px){.grid2{grid-template-columns:1fr 1fr;}}
+  .demo-box{display:flex; flex-wrap:wrap; gap:10px; margin:14px 0;}
+  .demo-box label{display:flex; flex-direction:column; font-size:13px; color:var(--muted); gap:6px; flex:1; min-width:150px;}
+  .demo-box input, .demo-box select{
+    padding:10px 12px; border-radius:10px; border:1px solid var(--border);
+    background:var(--bg2); color:var(--text); font-size:14px;
+  }
+  .btn{
+    background:var(--accent); color:#fff; border:none; padding:11px 20px; border-radius:10px;
+    font-size:14px; cursor:pointer; font-weight:600; transition:transform .25s ease, box-shadow .25s ease;
+  }
+  .btn:hover{transform:translateY(-2px); box-shadow:0 6px 16px rgba(91,95,240,.35);}
+  .btn.secondary{background:var(--accent2);}
+  #stepBox{margin-top:14px; display:grid; grid-template-columns:1fr; gap:6px;}
+  .step-row{
+    padding:9px 12px; border-left:3px solid var(--border); border-radius:8px;
+    background:var(--bg); opacity:0; transform:translateY(6px); font-size:13px;
+    font-family:"Fira Code",Consolas,monospace;
+  }
+  .step-row.win{border-left-color:var(--accent2);}
+  .step-row.show{animation: slideDown .4s ease forwards;}
+  .pulse{animation: pulse 1s ease infinite;}
+  #resultBadge{
+    display:inline-block; margin-top:14px; padding:10px 18px; border-radius:12px; font-weight:700;
+    opacity:0;
+  }
+  #resultBadge.show{animation: slideDown .5s ease forwards;}
+  .ok-good{background:rgba(0,184,148,.15); color:var(--accent2);}
+  .ok-bad{background:rgba(224,69,90,.15); color:var(--bad);}
+  .ok-ok{background:rgba(240,165,0,.15); color:var(--warn);}
+  .quiz-q{margin-bottom:18px; padding-bottom:14px; border-bottom:1px dashed var(--border);}
+  .quiz-q:last-child{border-bottom:none;}
+  .quiz-opt{
+    display:flex; align-items:center; gap:8px; padding:8px 10px; border-radius:10px; margin:4px 0;
+    cursor:pointer; border:1px solid transparent; transition:background .25s ease;
+  }
+  .quiz-opt:hover{background:var(--bg);}
+  .quiz-opt input{accent-color:var(--accent);}
+  .feedback{
+    margin-top:8px; padding:8px 12px; border-radius:8px; font-size:13.5px; display:none;
+  }
+  .feedback.show{display:block; animation: slideDown .4s ease both;}
+  .feedback.correct{background:rgba(0,184,148,.15); color:var(--accent2);}
+  .feedback.wrong{background:rgba(224,69,90,.15); color:var(--bad);}
+  #quizScore, #warmupScore{
+    margin-top:10px; font-weight:700; opacity:0;
+  }
+  #quizScore.show, #warmupScore.show{animation: fadeInDown .5s ease forwards;}
+  .data-good, .data-bad{padding:12px 14px; border-radius:12px; font-size:13.5px;}
+  .data-good{background:rgba(0,184,148,.08); border:1px solid rgba(0,184,148,.35);}
+  .data-bad{background:rgba(224,69,90,.08); border:1px solid rgba(224,69,90,.35);}
+  .warmup-box{
+    border:1px dashed var(--border); border-radius:14px; padding:14px 16px; margin:12px 0;
+    background:var(--bg);
+  }
+  .warmup-box h4{margin:0 0 8px; font-size:14.5px;}
+  .fillblank{
+    padding:9px 12px; border-radius:10px; border:1px solid var(--border);
+    background:var(--bg2); color:var(--text); font-size:14px; width:220px; max-width:100%;
+  }
+  select.matchsel{
+    padding:8px 10px; border-radius:8px; border:1px solid var(--border);
+    background:var(--bg2); color:var(--text); font-size:13.5px;
+  }
+  .match-row{display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin:6px 0;}
+  footer{text-align:center; margin-top:30px; font-size:12.5px; color:var(--muted);}
+
+  @keyframes fadeInDown{
+    from{opacity:0; transform:translateY(-16px);}
+    to{opacity:1; transform:translateY(0);}
+  }
+  @keyframes slideUp{
+    from{opacity:0; transform:translateY(18px);}
+    to{opacity:1; transform:translateY(0);}
+  }
+  @keyframes slideDown{
+    from{opacity:0; transform:translateY(-8px);}
+    to{opacity:1; transform:translateY(0);}
+  }
+  @keyframes pulse{
+    0%,100%{transform:scale(1);}
+    50%{transform:scale(1.05);}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="topbar">
+    <span class="muted" style="font-size:13px;">Claude-lession · AI/ML Tiếng Việt</span>
+    <button class="toggle" onclick="toggleTheme()">🌙 / ☀️ Đổi giao diện</button>
+  </div>
+
+  <header class="hero">
+    <span class="badge">SUPERVISED LEARNING — INSTANCE-BASED / LAZY LEARNING</span>
+    <h1>🍎🍊 K-Nearest Neighbors: "Gần Ai Thì Giống Người Đó"</h1>
+    <p>Không học công thức, không train mô hình — chỉ nhớ dữ liệu và "hỏi hàng xóm gần nhất". Chọn k thế nào cho đúng? Vì sao quên chuẩn hoá dữ liệu là thảm hoạ? Có demo tính tay + quiz tự chấm.</p>
+  </header>
+
+  <!-- KHỞI ĐỘNG NHANH -->
+  <section>
+    <h2><span class="num">0</span> Khởi động nhanh (60 giây)</h2>
+    <p class="muted">Trả lời nhanh 3 câu dưới đây trước khi học — không cần đúng hết, chỉ để "hâm nóng" não bạn.</p>
+
+    <div class="warmup-box">
+      <h4>1️⃣ Trắc nghiệm nhanh</h4>
+      <p>KNN dự đoán nhãn của một điểm dữ liệu mới bằng cách nào?</p>
+      <label class="quiz-opt"><input type="radio" name="w1" value="wrong">Giải một phương trình tuyến tính đã học được từ trước</label>
+      <label class="quiz-opt"><input type="radio" name="w1" value="right">Tìm k điểm gần nó nhất trong dữ liệu đã biết, rồi cho các điểm đó "bỏ phiếu" đa số</label>
+      <label class="quiz-opt"><input type="radio" name="w1" value="wrong">Vẽ ngẫu nhiên một đường phân chia rồi kiểm tra sau</label>
+    </div>
+
+    <div class="warmup-box">
+      <h4>2️⃣ Điền khuyết</h4>
+      <p>KNN không "học" ra công thức nào khi train — nó chỉ lưu lại toàn bộ dữ liệu, và mọi phép tính chỉ diễn ra khi có điểm mới cần dự đoán. Vì vậy KNN được gọi là kiểu học <b>______</b> (trái nghĩa với "eager learning" như Logistic Regression).</p>
+      <input class="fillblank" type="text" id="w2input" placeholder="Nhập từ khoá...">
+    </div>
+
+    <div class="warmup-box">
+      <h4>3️⃣ Đối chiếu với bản mẫu</h4>
+      <p>Ghép mỗi giá trị k với hệ quả của nó:</p>
+      <div class="match-row">k = 1 (chỉ nhìn 1 hàng xóm gần nhất) →
+        <select class="matchsel" id="m1">
+          <option value="">-- chọn --</option>
+          <option value="over">Dễ Overfit (nhạy nhiễu)</option>
+          <option value="under">Dễ Underfit (quá đơn giản)</option>
+        </select>
+      </div>
+      <div class="match-row">k = gần bằng toàn bộ dữ liệu N →
+        <select class="matchsel" id="m2">
+          <option value="">-- chọn --</option>
+          <option value="over">Dễ Overfit (nhạy nhiễu)</option>
+          <option value="under">Dễ Underfit (quá đơn giản)</option>
+        </select>
+      </div>
+    </div>
+
+    <button class="btn" onclick="checkWarmup()">✅ Kiểm tra khởi động</button>
+    <div id="warmupScore"></div>
+  </section>
+
+  <!-- 1. ĐỊNH NGHĨA -->
+  <section>
+    <h2><span class="num">1</span> Định nghĩa ngắn gọn</h2>
+    <p><b>K-Nearest Neighbors (KNN)</b> là thuật toán phân loại (hoặc hồi quy) <b>không tham số, dựa trên khoảng cách</b>: để dự đoán nhãn của một điểm mới, KNN tính <b>khoảng cách</b> (thường là Euclidean) từ điểm đó tới <b>toàn bộ</b> điểm trong tập huấn luyện, chọn ra <b>k điểm gần nhất</b>, rồi lấy <b>nhãn xuất hiện nhiều nhất</b> trong số đó làm dự đoán.</p>
+    <div class="ascii">  Điểm mới (?) ─▶ Tính khoảng cách tới TẤT CẢ điểm đã biết
+                        d = √((x₁-x₂)² + (y₁-y₂)²)
+                              │
+                              ▼
+                   Sắp xếp tăng dần, lấy k điểm gần nhất
+                              │
+                              ▼
+                    k hàng xóm "bỏ phiếu" theo nhãn
+                              │
+                              ▼
+                  Nhãn nào nhiều phiếu nhất ──▶ Dự đoán</div>
+    <p class="muted">Không có công thức <code class="inline">w₀ + w₁x₁ + ...</code> nào được học cả — công thức duy nhất là công thức khoảng cách, và "mô hình" chính là toàn bộ dữ liệu train được lưu lại.</p>
+  </section>
+
+  <!-- 2. BÀI TOÁN THỰC TẾ -->
+  <section>
+    <h2><span class="num">2</span> Bài toán thực tế: Táo 🍎 hay Cam 🍊?</h2>
+    <p>Máy phân loại trái cây trong nhà máy đóng gói cần đoán <b>Táo hay Cam</b> chỉ từ 2 cảm biến: <code class="inline">Trọng lượng (gram)</code> và <code class="inline">Độ nhám bề mặt (thang 0=trơn láng → 10=sần sùi)</code>.</p>
+    <table>
+      <thead><tr><th>Quả</th><th>Trọng lượng (g)</th><th>Độ nhám (0-10)</th><th>Nhãn thật</th></tr></thead>
+      <tbody>
+        <tr><td>A1</td><td>150</td><td>2</td><td>🍎 Táo</td></tr>
+        <tr><td>A2</td><td>170</td><td>1</td><td>🍎 Táo</td></tr>
+        <tr><td>A3</td><td>140</td><td>3</td><td>🍎 Táo</td></tr>
+        <tr><td>A4</td><td>160</td><td>2</td><td>🍎 Táo</td></tr>
+        <tr><td>B1</td><td>130</td><td>8</td><td>🍊 Cam</td></tr>
+        <tr><td>B2</td><td>155</td><td>9</td><td>🍊 Cam</td></tr>
+        <tr><td>B3</td><td>145</td><td>7</td><td>🍊 Cam</td></tr>
+        <tr><td>B4</td><td>120</td><td>8</td><td>🍊 Cam</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- 3. 4 TRẠNG THÁI -->
+  <section>
+    <h2><span class="num">3</span> 4 trạng thái khi chỉnh KNN</h2>
+    <p class="muted">Cùng 8 quả trên, chọn k khác nhau (và có/không chuẩn hoá dữ liệu) cho kết quả rất khác nhau:</p>
+
+    <!-- State 1 -->
+    <div class="state-card">
+      <h3>🔍 Trạng thái 1 — k = 1 (chỉ hỏi 1 hàng xóm) <span class="pill ok">⚠️ Trung bình</span></h3>
+      <div class="ascii">   Độ nhám
+    10 ┤        🍊🍊
+     8 ┤     🍊     🍊
+     6 ┤              ✗ ← 1 quả Cam lỗi cảm biến, đo nhám=1 (nhiễu!)
+     4 ┤
+     2 ┤ 🍎  🍎
+     0 ┤   🍎  🍎
+       └──────────────────────▶ Trọng lượng
+   Điểm mới nằm sát quả nhiễu "✗" → k=1 chỉ nhìn đúng 1 điểm này
+   → bị nhiễu đánh lừa, dự đoán SAI hoàn toàn theo điểm lỗi đó.</div>
+      <pre>from sklearn.neighbors import KNeighborsClassifier
+model = KNeighborsClassifier(n_neighbors=1).fit(X, y)
+# Boundary rất "gấp khúc", ôm sát từng điểm dữ liệu train → dễ học luôn cả nhiễu</pre>
+      <p class="muted">k=1 tạo ra ranh giới quyết định cực kỳ phức tạp, ôm khít từng điểm — Accuracy trên tập train gần như 100% nhưng cực nhạy với nhiễu/outlier, dễ <b>overfit</b>.</p>
+    </div>
+
+    <!-- State 2 -->
+    <div class="state-card">
+      <h3>✅ Trạng thái 2 — k phù hợp (vd k=3 hoặc k=5) <span class="pill good">✅ Tốt</span></h3>
+      <div class="ascii">   Độ nhám
+    10 ┤        🍊🍊
+     8 ┤     🍊     🍊
+     6 ┤          ？  ← điểm mới: 3 hàng xóm gần nhất gồm 2 Táo + 1 Cam
+     4 ┤                → vote đa số vẫn ra đúng hướng, "nhiễu" chỉ là 1/3 phiếu
+     2 ┤ 🍎  🍎
+     0 ┤   🍎  🍎
+       └──────────────────────▶ Trọng lượng
+   Ranh giới mượt hơn, ít bị lung lay bởi 1 điểm nhiễu đơn lẻ.</div>
+      <pre>model = KNeighborsClassifier(n_neighbors=5).fit(X, y)
+pred = model.predict(X_new)
+# Accuracy test ổn định hơn k=1, ranh giới quyết định mượt và tổng quát hoá tốt hơn</pre>
+      <p class="muted">Tăng k giúp "trung bình hoá" ảnh hưởng của nhiễu — cần vài phiếu bầu đồng thuận mới đổi được kết quả, thay vì phụ thuộc 100% vào 1 điểm duy nhất.</p>
+    </div>
+
+    <!-- State 3 -->
+    <div class="state-card">
+      <h3>🌫️ Trạng thái 3 — k quá lớn (gần bằng N) <span class="pill bad">❌ Xấu</span></h3>
+      <div class="ascii">  Với k = 8 (= toàn bộ 8 quả trong tập):
+  Mọi điểm mới, dù nằm ở đâu trên biểu đồ, đều "hỏi" luôn cả 8 quả
+  → phiếu bầu luôn là 4 Táo / 4 Cam (hoà) hoặc nghiêng theo lớp ĐÔNG HƠN
+    trong toàn tập, bất kể điểm mới đó thực sự nằm gần Táo hay gần Cam.
+  → mô hình "quên mất" vị trí cục bộ, chỉ còn nhớ tỉ lệ lớp toàn cục.</div>
+      <pre>model = KNeighborsClassifier(n_neighbors=8).fit(X, y)  # k = N
+# Mọi dự đoán gần như giống hệt nhau → underfit, ranh giới gần như biến mất</pre>
+      <p class="muted">k càng lớn, ranh giới quyết định càng "phẳng" và đơn giản — cực đoan nhất là k=N thì model chỉ còn dự đoán <b>lớp đa số của toàn tập train</b>, mất hết khả năng phân biệt cục bộ: đây là <b>underfit</b>.</p>
+    </div>
+
+    <!-- State 4 -->
+    <div class="state-card">
+      <h3>⚠️ Trạng thái 4 — Quên chuẩn hoá dữ liệu (feature scale lệch) <span class="pill bad">❌ Xấu</span></h3>
+      <div class="ascii">  Chưa chuẩn hoá:                         Đã chuẩn hoá (Min-Max về [0,1]):
+  Trọng lượng: 120 → 170 (biên độ 50)      Trọng lượng: 0.0 → 1.0
+  Độ nhám:       1 → 9   (biên độ 8)       Độ nhám:      0.0 → 1.0
+  d = √(Δweight² + Δtexture²)              d = √(Δweight_norm² + Δtexture_norm²)
+  → Δweight luôn LỚN hơn Δtexture rất      → cả 2 trục đóng góp CÂN BẰNG vào
+    nhiều lần → khoảng cách gần như chỉ      khoảng cách, "độ nhám" (đặc trưng
+    còn phụ thuộc trọng lượng, độ nhám       phân biệt Táo/Cam rõ nhất!) mới
+    gần như bị "nhấn chìm", vô tác dụng      thực sự được tính đến.</div>
+      <pre># SAI: dùng thẳng dữ liệu gốc
+model = KNeighborsClassifier(n_neighbors=3).fit(X_raw, y)   # weight (g) lấn át texture (0-10)
+
+# ĐÚNG: chuẩn hoá trước khi tính khoảng cách
+from sklearn.preprocessing import MinMaxScaler
+X_scaled = MinMaxScaler().fit_transform(X_raw)
+model = KNeighborsClassifier(n_neighbors=3).fit(X_scaled, y)</pre>
+      <p class="muted">KNN hoàn toàn dựa vào khoảng cách số học — feature nào có thang đo (đơn vị/biên độ) lớn hơn sẽ tự động "lấn át" các feature khác trong công thức Euclidean, dù feature đó chưa chắc quan trọng hơn. <b>Luôn chuẩn hoá (scale) dữ liệu trước khi dùng KNN.</b></p>
+    </div>
+  </section>
+
+  <!-- BẢNG SO SÁNH -->
+  <section>
+    <h2><span class="num">4</span> Bảng so sánh tổng hợp</h2>
+    <table>
+      <thead><tr><th>Trạng Thái</th><th>Input</th><th>Xử Lý</th><th>Output</th><th>Đánh Giá</th></tr></thead>
+      <tbody>
+        <tr><td>k = 1</td><td>8 quả + 1 điểm mới</td><td>Chỉ xét 1 hàng xóm gần nhất</td><td>Ranh giới gấp khúc, cực nhạy nhiễu</td><td class="grade-ok">⚠️ Dễ overfit</td></tr>
+        <tr><td>k phù hợp (3-5)</td><td>8 quả + 1 điểm mới</td><td>Vote đa số của 3-5 hàng xóm</td><td>Ranh giới mượt, ổn định</td><td class="grade-good">✅ Cân bằng tốt</td></tr>
+        <tr><td>k quá lớn (≈N)</td><td>8 quả + 1 điểm mới</td><td>Vote gần như toàn bộ dữ liệu</td><td>Luôn nghiêng về lớp đa số toàn cục</td><td class="grade-bad">❌ Underfit</td></tr>
+        <tr><td>Chưa chuẩn hoá feature</td><td>Weight (120-170) &amp; Texture (0-10)</td><td>Euclidean trên dữ liệu gốc</td><td>Khoảng cách bị Weight lấn át</td><td class="grade-bad">❌ Sai lệch khoảng cách</td></tr>
+      </tbody>
+    </table>
+    <p class="muted">💡 <b>Bài học:</b> Chọn k là đánh đổi kinh điển giữa <b>overfit (k nhỏ)</b> và <b>underfit (k lớn)</b> — thường chọn qua thử nghiệm (cross-validation) với vài giá trị k lẻ. Và vì KNN "sống chết" nhờ khoảng cách, <b>chuẩn hoá dữ liệu luôn là bước bắt buộc</b>, không phải tuỳ chọn.</p>
+  </section>
+
+  <!-- DEMO TƯƠNG TÁC -->
+  <section>
+    <h2><span class="num">5</span> Demo: Tính tay từng bước KNN</h2>
+    <p class="muted">Nhập trọng lượng, độ nhám của quả mới và chọn k, bấm <b>Chạy Demo</b> để xem KNN tính khoảng cách tới cả 8 quả, sắp xếp, và bỏ phiếu.</p>
+    <div class="demo-box">
+      <label>Trọng lượng (g)
+        <input type="number" id="weightInput" value="148" min="80" max="220">
+      </label>
+      <label>Độ nhám (0-10)
+        <input type="number" id="textureInput" value="3" min="0" max="10">
+      </label>
+      <label>k (số hàng xóm)
+        <select id="kInput">
+          <option value="1">k = 1</option>
+          <option value="3" selected>k = 3</option>
+          <option value="5">k = 5</option>
+          <option value="8">k = 8 (toàn bộ dữ liệu)</option>
+        </select>
+      </label>
+    </div>
+    <button class="btn" onclick="runDemo()">▶ Chạy Demo</button>
+    <button class="btn secondary" onclick="randomDemo()">🎲 Dữ liệu ngẫu nhiên</button>
+    <div id="stepBox"></div>
+    <div id="resultBadge"></div>
+  </section>
+
+  <!-- DỮ LIỆU TỐT vs XẤU -->
+  <section>
+    <h2><span class="num">6</span> Dữ liệu tốt vs dữ liệu xấu</h2>
+    <div class="grid2">
+      <div class="data-good">
+        <b>✅ Dữ liệu tốt</b>
+        <ul>
+          <li>Các feature đã được chuẩn hoá (Min-Max hoặc StandardScaler) về cùng thang đo</li>
+          <li>Số lượng mẫu đủ nhiều để mỗi vùng đều có "hàng xóm" đại diện, không quá thưa thớt</li>
+          <li>2 lớp không quá lệch nhau (vd 4 Táo / 4 Cam thay vì 95 Táo / 5 Cam)</li>
+          <li>VD: 500 quả, đo đạc chính xác, phân bố đều 2 lớp — đủ để chọn k qua cross-validation</li>
+        </ul>
+      </div>
+      <div class="data-bad">
+        <b>❌ Dữ liệu xấu</b>
+        <ul>
+          <li>Feature chưa chuẩn hoá: trọng lượng (gram) và độ nhám (0-10) chênh lệch thang đo hàng chục lần</li>
+          <li>Quá ít mẫu / dữ liệu thưa (sparse) → "hàng xóm gần nhất" thực ra lại ở rất xa, không đại diện</li>
+          <li>Nhiều feature dư thừa/nhiễu (curse of dimensionality) → khoảng cách Euclidean mất ý nghĩa phân biệt khi có hàng trăm chiều</li>
+          <li>Lớp mất cân bằng nặng (990 Táo / 10 Cam) → k lớn gần như luôn đoán "Táo", bỏ sót gần hết Cam thật</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- BÀI TẬP + QUIZ -->
+  <section>
+    <h2><span class="num">7</span> Bài tập nhỏ</h2>
+    <p>Cho quả mới: <b>Trọng lượng = 135g, Độ nhám = 7</b>. Hãy tự đoán xem với k=3, quả này gần với nhóm Táo hay Cam hơn — dựa vào bảng dữ liệu ở Mục 2 — trước khi nhập vào Demo phía trên để kiểm tra lại.</p>
+
+    <h2 style="margin-top:26px;"><span class="num">?</span> Quiz tự kiểm tra</h2>
+
+    <div class="quiz-q">
+      <p><b>Câu 1.</b> Vì sao KNN được gọi là "lazy learning" (học lười)?</p>
+      <label class="quiz-opt"><input type="radio" name="q1" value="wrong">Vì thuật toán chạy rất chậm trên máy yếu</label>
+      <label class="quiz-opt"><input type="radio" name="q1" value="right">Vì nó không học ra công thức/tham số nào ở bước train, chỉ lưu dữ liệu và tính toán khi có điểm mới cần dự đoán</label>
+      <label class="quiz-opt"><input type="radio" name="q1" value="wrong">Vì nó chỉ hoạt động với dữ liệu nhỏ hơn 100 dòng</label>
+      <div class="feedback" id="fb-q1"></div>
+    </div>
+
+    <div class="quiz-q">
+      <p><b>Câu 2.</b> Chọn k = 1 dễ gặp vấn đề gì nhất?</p>
+      <label class="quiz-opt"><input type="radio" name="q2" value="wrong">Underfit vì mô hình quá đơn giản</label>
+      <label class="quiz-opt"><input type="radio" name="q2" value="right">Overfit — dự đoán cực kỳ nhạy cảm với nhiễu vì chỉ dựa vào đúng 1 điểm gần nhất</label>
+      <label class="quiz-opt"><input type="radio" name="q2" value="wrong">Không có vấn đề gì, k=1 luôn là lựa chọn tốt nhất</label>
+      <div class="feedback" id="fb-q2"></div>
+    </div>
+
+    <div class="quiz-q">
+      <p><b>Câu 3.</b> Vì sao phải chuẩn hoá (scale) dữ liệu trước khi dùng KNN?</p>
+      <label class="quiz-opt"><input type="radio" name="q3" value="wrong">Để dữ liệu trông đẹp hơn khi vẽ biểu đồ</label>
+      <label class="quiz-opt"><input type="radio" name="q3" value="right">Vì KNN tính dự đoán dựa trên khoảng cách — feature có thang đo (biên độ) lớn hơn sẽ lấn át các feature khác nếu không được đưa về cùng thang đo</label>
+      <label class="quiz-opt"><input type="radio" name="q3" value="wrong">Vì nếu không chuẩn hoá, KNN sẽ báo lỗi và không chạy được</label>
+      <div class="feedback" id="fb-q3"></div>
+    </div>
+
+    <button class="btn" onclick="checkQuiz()">✅ Chấm điểm</button>
+    <div id="quizScore"></div>
+  </section>
+
+  <footer>
+    Claude-lession · Bài giảng AI/ML tiếng Việt tự động · Chủ đề tham khảo từ khóa học <i>AI For Beginners</i>.
+  </footer>
+</div>
+
+<script>
+function toggleTheme(){
+  const root = document.documentElement;
+  const cur = root.getAttribute('data-theme');
+  root.setAttribute('data-theme', cur === 'dark' ? 'light' : 'dark');
+  try{ localStorage.setItem('lesson-theme', root.getAttribute('data-theme')); }catch(e){}
+}
+(function initTheme(){
+  try{
+    const saved = localStorage.getItem('lesson-theme');
+    if(saved){ document.documentElement.setAttribute('data-theme', saved); }
+    else if(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches){
+      document.documentElement.setAttribute('data-theme','dark');
+    }
+  }catch(e){}
+})();
+
+function checkWarmup(){
+  let score = 0, total = 4;
+  const box = document.getElementById('warmupScore');
+
+  const w1 = document.querySelector('input[name="w1"]:checked');
+  if(w1 && w1.value === 'right') score++;
+
+  const w2 = (document.getElementById('w2input').value || '').trim().toLowerCase();
+  if(w2.includes('lazy') || w2.includes('lười')) score++;
+
+  const m1 = document.getElementById('m1').value;
+  const m2 = document.getElementById('m2').value;
+  if(m1 === 'over') score++;
+  if(m2 === 'under') score++;
+
+  box.textContent = `Khởi động xong: ${score}/${total} đúng — ` +
+    (score >= 3 ? '🔥 Trực giác tốt, vào bài chính thôi!' : '👍 Chưa sao, đọc kỹ Trạng thái 1-3 bên dưới nhé.');
+  box.className = 'show';
+}
+
+const DATA = [
+  {id:'A1', w:150, t:2, label:'Táo', emoji:'🍎'},
+  {id:'A2', w:170, t:1, label:'Táo', emoji:'🍎'},
+  {id:'A3', w:140, t:3, label:'Táo', emoji:'🍎'},
+  {id:'A4', w:160, t:2, label:'Táo', emoji:'🍎'},
+  {id:'B1', w:130, t:8, label:'Cam', emoji:'🍊'},
+  {id:'B2', w:155, t:9, label:'Cam', emoji:'🍊'},
+  {id:'B3', w:145, t:7, label:'Cam', emoji:'🍊'},
+  {id:'B4', w:120, t:8, label:'Cam', emoji:'🍊'},
+];
+
+function euclid(w1,t1,w2,t2){
+  return Math.sqrt((w1-w2)*(w1-w2) + (t1-t2)*(t1-t2));
+}
+
+function runDemo(){
+  const weight = parseFloat(document.getElementById('weightInput').value) || 0;
+  const texture = parseFloat(document.getElementById('textureInput').value) || 0;
+  const k = parseInt(document.getElementById('kInput').value, 10) || 3;
+
+  const ranked = DATA.map(p => ({
+    ...p,
+    d: euclid(weight, texture, p.w, p.t)
+  })).sort((a,b) => a.d - b.d);
+
+  const box = document.getElementById('stepBox');
+  box.innerHTML = '';
+
+  const header = document.createElement('div');
+  header.className = 'step-row';
+  header.textContent = `Điểm mới: Trọng lượng=${weight}g, Độ nhám=${texture} — sắp xếp khoảng cách tới 8 quả (tăng dần):`;
+  box.appendChild(header);
+  setTimeout(() => header.classList.add('show'), 0);
+
+  const votes = {};
+  ranked.forEach((p, i) => {
+    const isNeighbor = i < k;
+    const div = document.createElement('div');
+    div.className = 'step-row' + (isNeighbor ? ' win' : '');
+    div.textContent = `${i+1}. ${isNeighbor ? '👉' : '⏭️'} ${p.emoji} ${p.id} (${p.label}, ${p.w}g, nhám=${p.t}) — d = ${p.d.toFixed(2)}` +
+      (isNeighbor ? '  ← dùng để bầu chọn' : '  (ngoài k, bỏ qua)');
+    box.appendChild(div);
+    if(isNeighbor) votes[p.label] = (votes[p.label] || 0) + 1;
+    setTimeout(() => div.classList.add('show'), (i+1) * 220);
+  });
+
+  const voteStr = Object.entries(votes).map(([label,c]) => `${label}: ${c} phiếu`).join(' vs ');
+  const maxVotes = Math.max(...Object.values(votes));
+  const winners = Object.keys(votes).filter(l => votes[l] === maxVotes);
+
+  setTimeout(() => {
+    const voteDiv = document.createElement('div');
+    voteDiv.className = 'step-row show';
+    voteDiv.textContent = `Kết quả bầu chọn (k=${k}): ${voteStr}`;
+    box.appendChild(voteDiv);
+  }, (ranked.length + 1) * 220);
+
+  const badge = document.getElementById('resultBadge');
+  badge.className = '';
+  setTimeout(() => {
+    if(winners.length > 1){
+      badge.textContent = `🟡 HOÀ (${voteStr}) — k=${k} không phân biệt được, thử đổi k lẻ hơn hoặc nhỏ hơn`;
+      badge.className = 'ok-ok show';
+    } else {
+      const win = winners[0];
+      badge.textContent = `${win === 'Táo' ? '🍎' : '🍊'} DỰ ĐOÁN: ${win} (${voteStr}, k=${k})`;
+      badge.className = (win === 'Táo' ? 'ok-good' : 'ok-bad') + ' show';
+    }
+  }, (ranked.length + 1) * 220 + 250);
+}
+
+function randomDemo(){
+  document.getElementById('weightInput').value = Math.floor(Math.random()*90)+110;
+  document.getElementById('textureInput').value = Math.floor(Math.random()*10);
+  const kSel = document.getElementById('kInput');
+  kSel.selectedIndex = Math.floor(Math.random()*kSel.options.length);
+  runDemo();
+}
+
+const ANSWERS = {q1:'right', q2:'right', q3:'right'};
+function checkQuiz(){
+  let score = 0;
+  Object.keys(ANSWERS).forEach(q => {
+    const chosen = document.querySelector(`input[name="${q}"]:checked`);
+    const fb = document.getElementById('fb-' + q);
+    fb.classList.remove('correct','wrong');
+    if(!chosen){
+      fb.textContent = '⚠️ Bạn chưa chọn đáp án cho câu này.';
+      fb.classList.add('wrong','show');
+      return;
+    }
+    if(chosen.value === 'right'){
+      score++;
+      fb.textContent = '✅ Chính xác!';
+      fb.classList.add('correct','show');
+    } else {
+      fb.textContent = '❌ Chưa đúng, xem lại phần Trạng thái ở trên nhé.';
+      fb.classList.add('wrong','show');
+    }
+  });
+  const scoreBox = document.getElementById('quizScore');
+  scoreBox.textContent = `Điểm của bạn: ${score}/3`;
+  scoreBox.className = 'show';
+}
+</script>
+</body>
+</html>
