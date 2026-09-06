@@ -8,6 +8,7 @@ Quy ước đặt tên: `YYYY-MM-DD-<chu-de>-<ma-ngau-nhien>.html` — mã ngẫ
 
 | Ngày | Bài | Chủ đề | Mã |
 |---|---|---|---|
+| 2026-09-06 | [RNN, LSTM & GRU: Cho Mạng Nơ-ron Một Trí Nhớ](./2026-09-06-rnn-lstm-gru-sequence-9f317b9c.html) | Deep Learning — Vanilla RNN vs LSTM vs GRU vs Bidirectional LSTM, vanishing/exploding gradient, Backpropagation Through Time, forget/input/output gate, demo tín hiệu gradient theo khoảng cách | `9f317b9c` |
 | 2026-09-05 | [Word Embeddings: Biến Từ Ngữ Thành Vector Số](./2026-09-05-word-embeddings-word2vec-4620e44a.html) | NLP — One-Hot vs Bag-of-Words/TF-IDF vs Word2Vec (Skip-gram/CBOW) vs Contextual Embedding (BERT), cosine similarity, Distributional Hypothesis, đa nghĩa (polysemy), demo bản đồ vector tương tác | `4620e44a` |
 | 2026-09-04 | [Backpropagation & MLP: Khi Một Lớp Neuron Là Chưa Đủ](./2026-09-04-backpropagation-mlp-2c27fd32.html) | Neural Networks — Multi-Layer Perceptron, hidden layer + activation phi tuyến, chain rule, mất khả năng biểu diễn khi activation tuyến tính, chưa hội tụ do thiếu epoch, giải bài toán XOR | `2c27fd32` |
 | 2026-09-03 | [Linear Regression: Tìm Đường Thẳng Khớp Nhất](./2026-09-03-linear-regression-2f2c44d6.html) | Supervised Learning — Ordinary Least Squares, Normal Equation vs Gradient Descent, learning rate quá lớn (phân kỳ), dừng huấn luyện quá sớm (chưa hội tụ), MSE, R², ảnh hưởng của outlier | `2f2c44d6` |
