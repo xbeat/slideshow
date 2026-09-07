@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CNN: Tích Chập & Pooling — Máy Nhìn Ảnh Như Thế Nào?</title>
+<style>
+  :root{
+    --bg:#f6f7fb; --bg-card:#ffffff; --text:#1c2130; --text-dim:#5b6376;
+    --border:#e2e5ee; --accent:#0984e3; --accent-2:#00b894; --warn:#fdcb6e;
+    --bad:#ff6b6b; --good:#00b894; --mid:#fdcb6e;
+    --code-bg:#282c3b; --code-text:#e6e6e6; --shadow:0 8px 24px rgba(30,34,60,.08);
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --bg:#12141c; --bg-card:#1b1e2b; --text:#eef0f6; --text-dim:#9aa1b5;
+      --border:#2b2f42; --accent:#74b9ff; --accent-2:#55efc4; --warn:#ffe08a;
+      --bad:#ff8787; --good:#55efc4; --mid:#ffe08a;
+      --code-bg:#0e1017; --code-text:#d9dce6; --shadow:0 8px 24px rgba(0,0,0,.4);
+    }
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; font-family:-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    background:var(--bg); color:var(--text); line-height:1.65; padding-bottom:60px;
+  }
+  .wrap{max-width:920px; margin:0 auto; padding:0 20px;}
+  header.hero{
+    padding:56px 20px 40px; text-align:center; background:
+      radial-gradient(circle at 20% 20%, rgba(9,132,227,.18), transparent 45%),
+      radial-gradient(circle at 80% 0%, rgba(0,184,148,.15), transparent 40%);
+    animation:fadeInDown .7s ease both;
+  }
+  header.hero .badge{
+    display:inline-block; padding:5px 14px; border-radius:999px; font-size:.78rem;
+    background:var(--accent); color:#fff; margin-bottom:14px; letter-spacing:.03em;
+  }
+  header.hero h1{font-size:clamp(1.6rem,4vw,2.4rem); margin:0 0 10px;}
+  header.hero p{color:var(--text-dim); max-width:640px; margin:0 auto;}
+
+  @keyframes fadeInDown{from{opacity:0; transform:translateY(-18px);} to{opacity:1; transform:translateY(0);}}
+  @keyframes slideUp{from{opacity:0; transform:translateY(24px);} to{opacity:1; transform:translateY(0);}}
+  @keyframes slideDown{from{opacity:0; transform:translateY(-14px);} to{opacity:1; transform:translateY(0);}}
+  @keyframes pulse{0%,100%{transform:scale(1);} 50%{transform:scale(1.06);}}
+  @keyframes popIn{from{opacity:0; transform:scale(.7);} to{opacity:1; transform:scale(1);}}
+
+  section{margin:34px 0;}
+  .card{
+    background:var(--bg-card); border:1px solid var(--border); border-radius:16px;
+    padding:24px; box-shadow:var(--shadow); animation:slideUp .6s ease both;
+  }
+  h2{font-size:1.35rem; margin:0 0 14px; display:flex; align-items:center; gap:10px;}
+  h2 .num{
+    width:30px; height:30px; border-radius:9px; background:var(--accent); color:#fff;
+    display:flex; align-items:center; justify-content:center; font-size:.9rem; flex-shrink:0;
+  }
+  h3{font-size:1.05rem; margin:22px 0 8px;}
+  code, pre{font-family:"SF Mono",Consolas,Menlo,monospace;}
+  pre{
+    background:var(--code-bg); color:var(--code-text); padding:16px; border-radius:10px;
+    overflow-x:auto; font-size:.85rem; line-height:1.55;
+  }
+  code.inline{background:var(--code-bg); color:var(--code-text); padding:2px 6px; border-radius:5px; font-size:.85em;}
+
+  table{width:100%; border-collapse:collapse; margin:14px 0; font-size:.92rem;}
+  th,td{border:1px solid var(--border); padding:10px 12px; text-align:left; vertical-align:top;}
+  th{background:var(--bg); font-weight:600;}
+  .ok{color:var(--good); font-weight:600;}
+  .warn{color:var(--mid); font-weight:600;}
+  .bad{color:var(--bad); font-weight:600;}
+
+  .ascii{
+    background:var(--code-bg); color:var(--code-text); border-radius:10px; padding:16px;
+    font-family:"SF Mono",Consolas,Menlo,monospace; font-size:.82rem; overflow-x:auto;
+    white-space:pre; line-height:1.5;
+  }
+
+  .flow{display:flex; flex-wrap:wrap; align-items:center; gap:8px; justify-content:center; margin:18px 0;}
+  .flow .step{
+    background:var(--bg); border:1px solid var(--border); border-radius:10px; padding:10px 14px;
+    font-size:.85rem; text-align:center; min-width:110px;
+  }
+  .flow .step.active{border-color:var(--accent); animation:pulse 1.4s ease infinite; color:var(--accent); font-weight:700;}
+  .flow .arrow{color:var(--accent); font-size:1.3rem; animation:pulse 1.6s ease infinite;}
+
+  .demo-grid{display:grid; grid-template-columns:1fr; gap:22px;}
+  @media(min-width:760px){.demo-grid{grid-template-columns:1.6fr 1fr;}}
+  .controls{display:flex; flex-direction:column; gap:10px;}
+  .btn-row{display:flex; flex-wrap:wrap; gap:8px;}
+  button{
+    cursor:pointer; border:none; border-radius:9px; padding:10px 16px; font-size:.88rem;
+    font-weight:600; background:var(--accent); color:#fff; transition:transform .15s ease, opacity .15s ease;
+  }
+  button:hover{opacity:.88;}
+  button:active{transform:scale(.96);}
+  button.secondary{background:var(--bg); color:var(--text); border:1px solid var(--border);}
+  button.k-btn.selected{background:var(--accent-2); color:#0b1f19;}
+  .stat-box{
+    background:var(--bg); border:1px solid var(--border); border-radius:10px; padding:12px 14px; font-size:.88rem;
+  }
+  .stat-box b{color:var(--accent);}
+  #stepLabel{font-weight:700; animation:slideDown .4s ease both;}
+
+  .grid-area{display:flex; flex-wrap:wrap; gap:26px; align-items:flex-start; justify-content:center;}
+  .mat-label{font-size:.78rem; color:var(--text-dim); text-align:center; margin-bottom:6px;}
+  .matrix{display:grid; gap:3px; background:var(--border); padding:3px; border-radius:8px; width:max-content;}
+  .cell{
+    width:34px; height:34px; display:flex; align-items:center; justify-content:center;
+    background:var(--bg-card); font-size:.78rem; font-weight:600; border-radius:4px; position:relative;
+    transition:background .25s ease, color .25s ease, transform .2s ease;
+  }
+  .cell.window{background:rgba(9,132,227,.28); outline:2px solid var(--accent); z-index:2; transform:scale(1.04);}
+  .cell.kernel-cell{width:34px; height:34px; background:var(--code-bg); color:var(--code-text);}
+  .out-cell{background:var(--bg);}
+  .out-cell.filled{animation:popIn .4s ease both;}
+  .out-cell.relu-neg{color:var(--bad); text-decoration:line-through;}
+  .out-cell.relu-zeroed{background:rgba(255,107,107,.12); color:var(--text-dim);}
+  .out-cell.pooled{background:rgba(0,184,148,.22); color:var(--good); font-weight:700;}
+  .mini-title{font-size:.78rem; color:var(--text-dim); margin:2px 0 6px; text-align:center;}
+  .calc-box{
+    margin-top:14px; background:var(--code-bg); color:var(--code-text); border-radius:10px;
+    padding:12px 14px; font-family:"SF Mono",Consolas,Menlo,monospace; font-size:.8rem; min-height:44px;
+    animation:slideDown .3s ease both;
+  }
+
+  .quiz-q{margin-bottom:20px; padding-bottom:16px; border-bottom:1px dashed var(--border);}
+  .quiz-q label{display:block; padding:8px 10px; border-radius:8px; cursor:pointer; margin:4px 0;}
+  .quiz-q label:hover{background:var(--bg);}
+  .quiz-q input{margin-right:8px;}
+  .quiz-q .fb{display:none; margin-top:8px; padding:10px; border-radius:8px; font-size:.86rem; animation:slideDown .35s ease both;}
+  .quiz-q .fb.show{display:block;}
+  .quiz-q .fb.correct{background:rgba(0,184,148,.15); color:var(--good);}
+  .quiz-q .fb.wrong{background:rgba(255,107,107,.15); color:var(--bad);}
+  #quizScore{margin-top:12px; font-weight:700; animation:slideDown .4s ease both;}
+
+  footer{text-align:center; color:var(--text-dim); font-size:.82rem; margin-top:50px;}
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <span class="badge">🎲 Bài ngẫu nhiên · AI-For-Beginners · Computer Vision</span>
+  <h1>CNN: Tích Chập & Pooling</h1>
+  <p>Vì sao máy nhận ra được con mèo trong ảnh mà chỉ cần "trượt" vài ma trận nhỏ qua bức ảnh? Hôm nay ta mổ xẻ khối xây dựng cốt lõi của <b>Convolutional Neural Network</b>: phép <b>tích chập (convolution)</b> và <b>pooling</b>.</p>
+</header>
+
+<div class="wrap">
+
+<section class="card">
+  <h2><span class="num">1</span>Định nghĩa ngắn gọn</h2>
+  <p>Với ảnh, mỗi pixel là một con số. Thay vì nối phẳng cả ảnh vào một mạng nơ-ron thường (tốn tham số, mất thông tin không gian), CNN dùng một ma trận nhỏ gọi là <b>kernel/filter</b> (vd 3×3), <b>trượt</b> qua từng vùng của ảnh và tính <b>tích chập</b> (nhân từng phần tử rồi cộng lại):</p>
+  <pre>feature_map[i][j] = Σ Σ  image[i+m][j+n] * kernel[m][n]
+                     m  n
+
+→ Kernel giữ nguyên khi trượt (parameter sharing) → cực ít tham số, vẫn "nhìn" được cạnh, góc, hoạ tiết ở mọi vị trí trong ảnh</pre>
+  <p>Sau tích chập là <b>ReLU</b> (loại bỏ giá trị âm) rồi <b>Pooling</b> (thu nhỏ ảnh, giữ lại đặc trưng mạnh nhất) — lặp lại nhiều lớp để CNN học từ cạnh đơn giản → hoạ tiết → object hoàn chỉnh.</p>
+</section>
+
+<section class="card">
+  <h2><span class="num">2</span>4 trạng thái xử lý (State Trace)</h2>
+  <p>Theo dõi một ảnh 6×6 đi qua từng lớp của CNN:</p>
+
+  <div class="ascii" id="asciiTrace">
+Bước 0 — ẢNH GỐC (Input Layer)
+  Ma trận pixel thô, chưa qua xử lý gì.
+  [ 2 2 0 0 2 2 ]
+  [ 2 2 0 0 2 2 ]      ← có 1 dải "cạnh dọc" ở giữa
+  [ 2 2 0 0 2 2 ]
+  (chưa biết đây là cạnh, chỉ là con số)
+
+Bước 1 — TÍCH CHẬP (Convolution)
+  Kernel 3×3 trượt raster-scan (trái→phải, trên→dưới), mỗi vị trí:
+  window (3×3) ⊙ kernel (3×3) → cộng dồn → 1 số duy nhất
+  [ w w w | . . . ]        ← cửa sổ hiện tại
+  [ w w w | . . . ]  →→→   feature_map[0][0] = Σ(window ⊙ kernel)
+  [ w w w | . . . ]
+  Trượt sang phải 1 pixel (stride=1) → tính tiếp ô kế → ra ma trận 4×4
+
+Bước 2 — ACTIVATION (ReLU)
+  ReLU(x) = max(0, x)  → chỉ giữ tín hiệu "kích hoạt", bỏ nhiễu âm
+  feature_map: [ 6  6 -6 -6 ]      →  sau ReLU: [ 6  6  0  0 ]
+               [ 6  6 -6 -6 ]                    [ 6  6  0  0 ]
+  (vùng có cạnh dọc → giá trị dương mạnh; vùng phẳng → gần 0/âm → bị dập)
+
+Bước 3 — POOLING (Max Pooling 2×2, stride 2)
+  Chia feature map thành ô 2×2, mỗi ô CHỈ giữ giá trị LỚN NHẤT
+  [ 6 6 | 0 0 ]         [ 6 | 0 ]
+  [ 6 6 | 0 0 ]   →→→   [   |   ]   ✅ ảnh nhỏ lại 1 nửa, đặc trưng vẫn giữ
+  ---------------
+  [ 6 6 | 0 0 ]         [ 6 | 0 ]
+  [ 6 6 | 0 0 ]
+  </div>
+
+  <table>
+    <tr><th>Trạng Thái</th><th>Input</th><th>Xử Lý</th><th>Output</th><th>Đánh Giá</th></tr>
+    <tr>
+      <td>0. Ảnh gốc</td><td>Ma trận pixel N×N (hoặc 3 kênh RGB)</td>
+      <td>Chưa xử lý gì</td>
+      <td>Con số thô, chưa mang ý nghĩa "đặc trưng"</td><td class="warn">⚠️ Thông tin thô, chưa dùng được</td>
+    </tr>
+    <tr>
+      <td>1. Convolution</td><td>Ảnh + kernel K×K (weight học được)</td>
+      <td>Trượt kernel, tính tích chập từng vùng</td>
+      <td>Feature map — bản đồ vị trí có đặc trưng (cạnh, góc...)</td><td class="warn">⚠️ Còn lẫn giá trị âm/nhiễu</td>
+    </tr>
+    <tr>
+      <td>2. ReLU</td><td>Feature map (có âm/dương)</td>
+      <td>max(0, x) — dập giá trị âm</td>
+      <td>Feature map "sạch", chỉ còn tín hiệu kích hoạt</td><td class="warn">⚠️ Vẫn còn kích thước lớn, tốn compute</td>
+    </tr>
+    <tr>
+      <td>3. Pooling</td><td>Feature map đã ReLU</td>
+      <td>Max/Avg pooling theo cửa sổ (vd 2×2)</td>
+      <td>Bản đồ đặc trưng nhỏ hơn, giữ thông tin quan trọng nhất</td><td class="ok">✅ Gọn, ít tham số, chống overfit &amp; dịch chuyển ảnh nhẹ</td>
+    </tr>
+  </table>
+
+  <div class="flow" id="flowDiagram">
+    <div class="step" id="f0">Ảnh gốc</div>
+    <div class="arrow">➜</div>
+    <div class="step" id="f1">Convolution</div>
+    <div class="arrow">➜</div>
+    <div class="step" id="f2">ReLU</div>
+    <div class="arrow">➜</div>
+    <div class="step" id="f3">Pooling ✅</div>
+  </div>
+
+  <pre>import torch.nn as nn
+
+model = nn.Sequential(
+    nn.Conv2d(in_channels=1, out_channels=8, kernel_size=3, stride=1, padding=0),
+    nn.ReLU(),
+    nn.MaxPool2d(kernel_size=2, stride=2),
+    # ...lặp lại vài lớp Conv+ReLU+Pool, rồi Flatten() + Linear() để phân loại
+)</pre>
+</section>
+
+<section class="card">
+  <h2><span class="num">3</span>Demo tương tác: tự tay trượt kernel qua ảnh</h2>
+  <p>Ảnh 6×6 bên dưới có một dải <b>cạnh dọc</b> ở giữa (giá trị 2 rồi đột ngột về 0). Chọn kernel, bấm <b>"Bước tiếp theo"</b> để trượt cửa sổ 3×3, xem CNN tính từng ô của feature map, rồi qua ReLU và Pooling.</p>
+
+  <div class="demo-grid">
+    <div class="grid-area">
+      <div>
+        <div class="mat-label">Ảnh input (6×6)</div>
+        <div class="matrix" id="imgMatrix" style="grid-template-columns:repeat(6,34px);"></div>
+      </div>
+      <div>
+        <div class="mat-label">Kernel (3×3)</div>
+        <div class="matrix" id="kernelMatrix" style="grid-template-columns:repeat(3,34px);"></div>
+        <div class="mini-title" id="kernelName">Edge dọc</div>
+      </div>
+      <div>
+        <div class="mat-label" id="outLabel">Feature map (4×4)</div>
+        <div class="matrix" id="outMatrix" style="grid-template-columns:repeat(4,34px);"></div>
+      </div>
+    </div>
+    <div class="controls">
+      <div class="stat-box">Trạng thái: <span id="stepLabel">Chưa bắt đầu</span></div>
+      <div class="stat-box">Vị trí cửa sổ: <b id="posCount">—</b></div>
+      <div class="btn-row">
+        <button id="stepBtn">▶ Bước tiếp theo</button>
+        <button class="secondary" id="resetBtn">↺ Reset</button>
+      </div>
+      <div class="btn-row">
+        <span style="font-size:.82rem;color:var(--text-dim);align-self:center;">Chọn kernel:</span>
+        <button class="secondary k-btn selected" data-k="vertical">Edge dọc</button>
+        <button class="secondary k-btn" data-k="horizontal">Edge ngang</button>
+        <button class="secondary k-btn" data-k="blur">Làm mờ</button>
+      </div>
+      <div class="calc-box" id="calcBox">Bấm "Bước tiếp theo" để bắt đầu trượt kernel...</div>
+    </div>
+  </div>
+</section>
+
+<section class="card">
+  <h2><span class="num">4</span>Dữ liệu tốt vs dữ liệu xấu (khi huấn luyện CNN)</h2>
+  <table>
+    <tr><th>Trạng Thái</th><th>Input</th><th>Xử Lý</th><th>Output</th><th>Đánh Giá</th></tr>
+    <tr>
+      <td>Pixel đã chuẩn hoá</td>
+      <td>Giá trị pixel 0–255 → chia 255, đưa về [0,1]</td>
+      <td>Gradient ổn định, hội tụ nhanh</td>
+      <td>Model học nhanh, ít nhiễu số học</td>
+      <td class="ok">✅ Tốt</td>
+    </tr>
+    <tr>
+      <td>Pixel thô chưa chuẩn hoá</td>
+      <td>Giá trị 0–255 đưa thẳng vào mạng</td>
+      <td>Gradient bùng nổ/tắt dần, loss dao động mạnh</td>
+      <td>Huấn luyện chậm, khó hội tụ</td>
+      <td class="bad">❌ Xấu</td>
+    </tr>
+    <tr>
+      <td>Dữ liệu đã augment (xoay, lật, crop)</td>
+      <td>1 ảnh mèo → sinh thêm ảnh xoay 15°, lật ngang, phóng to nhẹ</td>
+      <td>Model thấy nhiều biến thể của cùng 1 vật thể</td>
+      <td>Nhận diện được mèo ở nhiều góc/tư thế khác</td>
+      <td class="ok">✅ Tốt</td>
+    </tr>
+    <tr>
+      <td>Dữ liệu ít, không augment, lệch góc chụp</td>
+      <td>Toàn bộ ảnh mèo chụp chính diện, nền trắng</td>
+      <td>Model "học vẹt" đặc điểm nền/góc chụp thay vì con vật</td>
+      <td>Test ảnh mèo nghiêng/nền phức tạp → đoán sai</td>
+      <td class="bad">❌ Overfit theo bối cảnh</td>
+    </tr>
+  </table>
+  <pre>from torchvision import transforms
+
+# ✅ Tốt: chuẩn hoá + augment
+transform = transforms.Compose([
+    transforms.RandomHorizontalFlip(),
+    transforms.RandomRotation(15),
+    transforms.ToTensor(),                       # tự đưa pixel về [0,1]
+    transforms.Normalize(mean=[0.5], std=[0.5]),
+])
+
+# ❌ Xấu: dùng thẳng ảnh gốc, không augment, không chuẩn hoá
+# img_tensor = torch.tensor(raw_pixels)  # giá trị 0-255, không augment</pre>
+</section>
+
+<section class="card">
+  <h2><span class="num">5</span>Ứng dụng thực tế</h2>
+  <ul>
+    <li><b>Phân loại ảnh:</b> nhận diện chó/mèo, chữ viết tay (MNIST), sản phẩm lỗi trên dây chuyền.</li>
+    <li><b>Object Detection:</b> khoanh vùng + gọi tên vật thể trong ảnh (xe tự lái nhận biết người đi bộ).</li>
+    <li><b>Y tế:</b> phát hiện khối u trong ảnh X-quang/MRI từ các đặc trưng cạnh, kết cấu mô.</li>
+    <li><b>OCR:</b> lớp Conv đầu học nét chữ cơ bản, lớp sau ghép thành ký tự/từ hoàn chỉnh.</li>
+  </ul>
+</section>
+
+<section class="card">
+  <h2><span class="num">6</span>Bài tập nhỏ</h2>
+  <p>Cho vùng ảnh 3×3: <code class="inline">[[1,1,1],[0,0,0],[-1,-1,-1]]</code> và kernel edge-ngang <code class="inline">[[-1,-1,-1],[0,0,0],[1,1,1]]</code>.</p>
+  <ol>
+    <li>Tính tích chập: nhân từng cặp phần tử tương ứng rồi cộng lại (chỉ 1 vị trí, không cần trượt).</li>
+    <li>Áp dụng ReLU lên kết quả — giá trị cuối cùng là bao nhiêu?</li>
+    <li>Vùng ảnh này có đặc điểm gì đặc biệt theo trục ngang? Vì sao kernel edge-ngang lại "phản ứng" mạnh với nó?</li>
+  </ol>
+</section>
+
+<section class="card">
+  <h2><span class="num">7</span>Quiz tự kiểm tra</h2>
+  <div id="quiz">
+    <div class="quiz-q" data-correct="c">
+      <p><b>1. Vì sao CNN dùng kernel trượt thay vì nối phẳng (flatten) ảnh vào mạng thường?</b></p>
+      <label><input type="radio" name="q1" value="a">Vì flatten không hợp lệ về mặt toán học</label>
+      <label><input type="radio" name="q1" value="b">Vì kernel chạy nhanh hơn trên CPU</label>
+      <label><input type="radio" name="q1" value="c">Vì kernel chia sẻ tham số ở mọi vị trí → ít tham số hơn, giữ được thông tin không gian</label>
+      <div class="fb"></div>
+    </div>
+    <div class="quiz-q" data-correct="b">
+      <p><b>2. ReLU trong CNN dùng để làm gì?</b></p>
+      <label><input type="radio" name="q2" value="a">Thu nhỏ kích thước ảnh</label>
+      <label><input type="radio" name="q2" value="b">Loại bỏ giá trị âm, chỉ giữ tín hiệu kích hoạt dương</label>
+      <label><input type="radio" name="q2" value="c">Chuẩn hoá pixel về khoảng [0,1]</label>
+      <div class="fb"></div>
+    </div>
+    <div class="quiz-q" data-correct="a">
+      <p><b>3. Max Pooling 2×2 làm gì với feature map?</b></p>
+      <label><input type="radio" name="q3" value="a">Chia thành ô 2×2, giữ lại giá trị lớn nhất mỗi ô → thu nhỏ ảnh còn 1 nửa</label>
+      <label><input type="radio" name="q3" value="b">Tính trung bình cộng toàn bộ feature map thành 1 số</label>
+      <label><input type="radio" name="q3" value="c">Nhân đôi kích thước feature map</label>
+      <div class="fb"></div>
+    </div>
+    <div class="quiz-q" data-correct="c">
+      <p><b>4. Vì sao cần Data Augmentation (xoay, lật ảnh) khi dữ liệu ít?</b></p>
+      <label><input type="radio" name="q4" value="a">Để ảnh đẹp hơn khi hiển thị</label>
+      <label><input type="radio" name="q4" value="b">Để giảm số lớp Conv cần dùng</label>
+      <label><input type="radio" name="q4" value="c">Để model thấy nhiều biến thể của vật thể, tránh học vẹt theo bối cảnh/góc chụp</label>
+      <div class="fb"></div>
+    </div>
+    <div class="quiz-q" data-correct="b">
+      <p><b>5. Không chuẩn hoá pixel (giữ nguyên 0–255) khi train CNN thường dẫn đến điều gì?</b></p>
+      <label><input type="radio" name="q5" value="a">Model chính xác hơn vì giữ dữ liệu gốc</label>
+      <label><input type="radio" name="q5" value="b">Gradient dao động mạnh, khó hội tụ, huấn luyện chậm</label>
+      <label><input type="radio" name="q5" value="c">Không ảnh hưởng gì đến quá trình huấn luyện</label>
+      <div class="fb"></div>
+    </div>
+  </div>
+  <button id="checkQuizBtn">✔ Chấm điểm</button>
+  <div id="quizScore"></div>
+</section>
+
+<footer>Bài giảng tự động — AI-For-Beginners, phần Computer Vision · CNN: Tích Chập & Pooling</footer>
+</div>
+
+<script>
+// ---------- Dữ liệu ảnh & kernel ----------
+const image = [
+  [2,2,0,0,2,2],
+  [2,2,0,0,2,2],
+  [2,2,0,0,2,2],
+  [2,2,0,0,2,2],
+  [2,2,0,0,2,2],
+  [2,2,0,0,2,2],
+];
+const kernels = {
+  vertical:   {name:"Edge dọc",  m:[[-1,0,1],[-1,0,1],[-1,0,1]]},
+  horizontal: {name:"Edge ngang",m:[[-1,-1,-1],[0,0,0],[1,1,1]]},
+  blur:       {name:"Làm mờ",    m:[[1,1,1],[1,1,1],[1,1,1]], divisor:9},
+};
+
+const N = 6, K = 3, OUT = N - K + 1; // 4x4 feature map
+let kernelKey = "vertical";
+let pos = 0;               // vị trí hiện tại (0..OUT*OUT-1) trong lúc convolution
+let phase = "raw";         // raw -> conv -> relu -> pool -> done
+let featureMap = [];       // OUT x OUT giá trị thô
+let reluMap = [];          // sau ReLU
+
+const imgMatrixEl = document.getElementById("imgMatrix");
+const kernelMatrixEl = document.getElementById("kernelMatrix");
+const outMatrixEl = document.getElementById("outMatrix");
+const kernelNameEl = document.getElementById("kernelName");
+const calcBox = document.getElementById("calcBox");
+
+function renderImageGrid(){
+  imgMatrixEl.innerHTML = "";
+  for(let r=0;r<N;r++){
+    for(let c=0;c<N;c++){
+      const cell = document.createElement("div");
+      cell.className = "cell";
+      cell.id = `img-${r}-${c}`;
+      cell.textContent = image[r][c];
+      imgMatrixEl.appendChild(cell);
+    }
+  }
+}
+
+function renderKernelGrid(){
+  const k = kernels[kernelKey];
+  kernelMatrixEl.innerHTML = "";
+  k.m.flat().forEach(v=>{
+    const cell = document.createElement("div");
+    cell.className = "cell kernel-cell";
+    cell.textContent = k.divisor ? (v/k.divisor).toFixed(2) : v;
+    kernelMatrixEl.appendChild(cell);
+  });
+  kernelNameEl.textContent = k.name;
+}
+
+function renderOutGrid(){
+  outMatrixEl.innerHTML = "";
+  outMatrixEl.style.gridTemplateColumns = `repeat(${OUT},34px)`;
+  document.getElementById("outLabel").textContent =
+    phase === "pool" || phase === "done" ? "Feature map sau Pooling (2×2)" : `Feature map (${OUT}×${OUT})`;
+
+  if(phase === "pool" || phase === "done"){
+    const P = OUT/2;
+    outMatrixEl.style.gridTemplateColumns = `repeat(${P},34px)`;
+    for(let r=0;r<P;r++){
+      for(let c=0;c<P;c++){
+        const cell = document.createElement("div");
+        cell.className = "cell out-cell pooled";
+        const vals = [
+          reluMap[r*2][c*2], reluMap[r*2][c*2+1],
+          reluMap[r*2+1][c*2], reluMap[r*2+1][c*2+1]
+        ];
+        cell.textContent = Math.max(...vals);
+        outMatrixEl.appendChild(cell);
+      }
+    }
+    return;
+  }
+
+  for(let r=0;r<OUT;r++){
+    for(let c=0;c<OUT;c++){
+      const idx = r*OUT+c;
+      const cell = document.createElement("div");
+      cell.className = "cell out-cell";
+      cell.id = `out-${r}-${c}`;
+      const hasConv = idx < pos || phase !== "conv";
+      if(featureMap[r] && featureMap[r][c] !== undefined && (hasConv || phase==="relu")){
+        cell.classList.add("filled");
+        if(phase === "relu"){
+          const v = featureMap[r][c];
+          cell.textContent = Math.max(0,v);
+          if(v < 0) cell.classList.add("relu-zeroed");
+        } else {
+          cell.textContent = featureMap[r][c];
+          if(featureMap[r][c] < 0) cell.classList.add("relu-neg");
+        }
+      }
+      outMatrixEl.appendChild(cell);
+    }
+  }
+}
+
+function clearWindowHighlight(){
+  document.querySelectorAll(".cell.window").forEach(c=>c.classList.remove("window"));
+}
+
+function highlightWindow(r,c){
+  clearWindowHighlight();
+  for(let m=0;m<K;m++){
+    for(let n=0;n<K;n++){
+      const el = document.getElementById(`img-${r+m}-${c+n}`);
+      if(el) el.classList.add("window");
+    }
+  }
+}
+
+function convAt(r,c){
+  const k = kernels[kernelKey];
+  let sum = 0;
+  for(let m=0;m<K;m++){
+    for(let n=0;n<K;n++){
+      sum += image[r+m][c+n] * k.m[m][n];
+    }
+  }
+  return k.divisor ? +(sum / k.divisor).toFixed(2) : sum;
+}
+
+function updateFlowUI(){
+  ["f0","f1","f2","f3"].forEach(id=>document.getElementById(id).classList.remove("active"));
+  const map = {raw:"f0", conv:"f1", relu:"f2", pool:"f3", done:"f3"};
+  document.getElementById(map[phase]).classList.add("active");
+  const labels = {
+    raw:"Ảnh gốc — chưa xử lý",
+    conv:`Convolution — đang trượt kernel (${pos}/${OUT*OUT})`,
+    relu:"Activation — áp dụng ReLU (dập giá trị âm)",
+    pool:"Pooling — Max Pooling 2×2 hoàn tất ✅",
+    done:"Hoàn tất pipeline ✅"
+  };
+  const stepLabel = document.getElementById("stepLabel");
+  stepLabel.textContent = labels[phase];
+  stepLabel.style.animation = "none"; void stepLabel.offsetWidth; stepLabel.style.animation = "slideDown .4s ease both";
+  document.getElementById("posCount").textContent = phase==="conv" ? `${pos}/${OUT*OUT}` : "—";
+}
+
+function step(){
+  if(phase === "raw"){
+    phase = "conv"; pos = 0;
+    featureMap = Array.from({length:OUT}, ()=>new Array(OUT).fill(undefined));
+  }
+  if(phase === "conv"){
+    const r = Math.floor(pos/OUT), c = pos%OUT;
+    highlightWindow(r,c);
+    const val = convAt(r,c);
+    featureMap[r][c] = val;
+    calcBox.textContent = `Vị trí (${r},${c}): Σ(window ⊙ kernel) = ${val}`;
+    pos++;
+    if(pos >= OUT*OUT){
+      phase = "relu-pending"; // chuyển hẳn sang relu ở bước gọi tiếp theo
+    }
+  } else if(phase === "relu-pending"){
+    clearWindowHighlight();
+    phase = "relu";
+    reluMap = featureMap.map(row=>row.map(v=>Math.max(0,v)));
+    calcBox.textContent = `ReLU(x) = max(0,x) áp dụng cho toàn bộ ${OUT}×${OUT} feature map — giá trị âm (gạch ngang) bị dập về 0.`;
+  } else if(phase === "relu"){
+    phase = "pool";
+    calcBox.textContent = `Max Pooling 2×2, stride 2: mỗi ô 2×2 chỉ giữ lại giá trị LỚN NHẤT → kích thước giảm còn ${OUT/2}×${OUT/2}.`;
+  } else if(phase === "pool"){
+    phase = "done";
+    calcBox.textContent = `✅ Xong 1 khối Conv→ReLU→Pool. Trong CNN thật, khối này lặp lại nhiều lần trước khi Flatten + Linear để phân loại.`;
+  } else {
+    return;
+  }
+  renderOutGrid();
+  updateFlowUI();
+}
+
+function reset(){
+  phase = "raw"; pos = 0; featureMap = []; reluMap = [];
+  clearWindowHighlight();
+  calcBox.textContent = 'Bấm "Bước tiếp theo" để bắt đầu trượt kernel...';
+  renderOutGrid();
+  updateFlowUI();
+}
+
+document.getElementById("stepBtn").addEventListener("click", step);
+document.getElementById("resetBtn").addEventListener("click", reset);
+document.querySelectorAll(".k-btn").forEach(btn=>{
+  btn.addEventListener("click", ()=>{
+    document.querySelectorAll(".k-btn").forEach(b=>b.classList.remove("selected"));
+    btn.classList.add("selected");
+    kernelKey = btn.dataset.k;
+    renderKernelGrid();
+    reset();
+  });
+});
+
+renderImageGrid();
+renderKernelGrid();
+reset();
+
+// ---------- Quiz ----------
+document.getElementById("checkQuizBtn").addEventListener("click", ()=>{
+  const questions = document.querySelectorAll(".quiz-q");
+  let score = 0;
+  questions.forEach(q=>{
+    const correct = q.dataset.correct;
+    const checked = q.querySelector("input:checked");
+    const fb = q.querySelector(".fb");
+    fb.classList.remove("show","correct","wrong");
+    if(!checked){
+      fb.textContent = "⚠️ Bạn chưa chọn đáp án.";
+      fb.classList.add("show","wrong");
+      return;
+    }
+    if(checked.value === correct){
+      score++;
+      fb.textContent = "✅ Chính xác!";
+      fb.classList.add("show","correct");
+    } else {
+      fb.textContent = "❌ Chưa đúng — xem lại phần trên nhé.";
+      fb.classList.add("show","wrong");
+    }
+  });
+  const scoreBox = document.getElementById("quizScore");
+  scoreBox.textContent = `Kết quả: ${score}/${questions.length} câu đúng`;
+  scoreBox.style.animation = "none"; void scoreBox.offsetWidth; scoreBox.style.animation = "slideDown .4s ease both";
+});
+</script>
+</body>
+</html>

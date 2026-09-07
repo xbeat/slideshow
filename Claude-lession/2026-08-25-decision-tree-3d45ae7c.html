@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cây Quyết Định (Decision Tree) — Học AI/ML dễ hiểu</title>
+<style>
+  :root{
+    --bg:#f6f7fb; --bg2:#ffffff; --text:#1c1f2b; --muted:#5b6072;
+    --accent:#5b5ff0; --accent2:#00b894; --warn:#f0a500; --bad:#e0455a;
+    --border:#e3e5ef; --card:#ffffff; --code-bg:#1c1f2b; --code-text:#e8eaf6;
+    --shadow: 0 8px 24px rgba(30,32,60,0.08);
+  }
+  [data-theme="dark"]{
+    --bg:#12131c; --bg2:#181a26; --text:#eceefb; --muted:#a2a6c2;
+    --accent:#8b8ffb; --accent2:#3ddc97; --warn:#ffc233; --bad:#ff6b7d;
+    --border:#2a2d40; --card:#1c1e2c; --code-bg:#0d0e16; --code-text:#dfe2f7;
+    --shadow: 0 8px 28px rgba(0,0,0,0.45);
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; font-family:"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+    background:var(--bg); color:var(--text); transition:background .4s ease,color .4s ease;
+    line-height:1.6;
+  }
+  .wrap{max-width:960px; margin:0 auto; padding:20px 16px 80px;}
+  header.hero{
+    text-align:center; padding:36px 20px; border-radius:20px;
+    background:linear-gradient(135deg,var(--accent),#9b8cff);
+    color:#fff; box-shadow:var(--shadow);
+    animation: fadeInDown .7s ease both;
+    position:relative;
+  }
+  header.hero h1{margin:0 0 8px; font-size:clamp(22px,4vw,34px);}
+  header.hero p{margin:0; opacity:.92; font-size:15px;}
+  .topbar{display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:14px;}
+  .badge{
+    display:inline-block; background:rgba(255,255,255,.18); padding:4px 12px;
+    border-radius:999px; font-size:12px; letter-spacing:.5px; margin-bottom:10px;
+  }
+  button.toggle{
+    background:var(--card); color:var(--text); border:1px solid var(--border);
+    padding:8px 14px; border-radius:999px; cursor:pointer; font-size:13px;
+    box-shadow:var(--shadow); transition:transform .25s ease, background .3s ease;
+  }
+  button.toggle:hover{transform:translateY(-2px);}
+  section{
+    background:var(--card); border:1px solid var(--border); border-radius:16px;
+    padding:22px 20px; margin-top:22px; box-shadow:var(--shadow);
+    animation: slideUp .6s ease both;
+  }
+  section h2{margin-top:0; font-size:20px; display:flex; align-items:center; gap:8px;}
+  section h2 .num{
+    background:var(--accent); color:#fff; width:28px; height:28px; border-radius:50%;
+    display:inline-flex; align-items:center; justify-content:center; font-size:14px; flex:none;
+  }
+  p{color:var(--text);}
+  .muted{color:var(--muted);}
+  code, pre{font-family:"Fira Code",Consolas,monospace;}
+  pre{
+    background:var(--code-bg); color:var(--code-text); padding:14px 16px; border-radius:12px;
+    overflow-x:auto; font-size:13px; line-height:1.55;
+  }
+  code.inline{background:var(--code-bg); color:var(--code-text); padding:2px 6px; border-radius:6px; font-size:.9em;}
+  table{width:100%; border-collapse:collapse; margin:12px 0; font-size:14px; overflow-x:auto; display:block;}
+  table thead, table tbody{width:100%;}
+  th,td{border:1px solid var(--border); padding:8px 10px; text-align:left; vertical-align:top;}
+  th{background:var(--bg); color:var(--muted); font-weight:600;}
+  .grade-good{color:var(--accent2); font-weight:700;}
+  .grade-ok{color:var(--warn); font-weight:700;}
+  .grade-bad{color:var(--bad); font-weight:700;}
+  .state-card{
+    border:1px dashed var(--border); border-radius:14px; padding:16px; margin:14px 0;
+    background:var(--bg); animation: slideUp .5s ease both;
+  }
+  .state-card h3{margin:0 0 6px; font-size:16px; display:flex; align-items:center; gap:8px; flex-wrap:wrap;}
+  .pill{font-size:11px; padding:3px 10px; border-radius:999px; font-weight:700;}
+  .pill.good{background:rgba(0,184,148,.15); color:var(--accent2);}
+  .pill.ok{background:rgba(240,165,0,.15); color:var(--warn);}
+  .pill.bad{background:rgba(224,69,90,.15); color:var(--bad);}
+  .ascii{
+    background:var(--code-bg); color:var(--code-text); padding:14px; border-radius:12px;
+    font-family:"Fira Code",Consolas,monospace; font-size:12.5px; white-space:pre; overflow-x:auto;
+  }
+  .grid2{display:grid; grid-template-columns:1fr; gap:14px;}
+  @media(min-width:720px){.grid2{grid-template-columns:1fr 1fr;}}
+  .demo-box{display:flex; flex-wrap:wrap; gap:10px; margin:14px 0;}
+  .demo-box label{display:flex; flex-direction:column; font-size:13px; color:var(--muted); gap:6px; flex:1; min-width:150px;}
+  .demo-box input{
+    padding:10px 12px; border-radius:10px; border:1px solid var(--border);
+    background:var(--bg2); color:var(--text); font-size:14px;
+  }
+  .btn{
+    background:var(--accent); color:#fff; border:none; padding:11px 20px; border-radius:10px;
+    font-size:14px; cursor:pointer; font-weight:600; transition:transform .25s ease, box-shadow .25s ease;
+  }
+  .btn:hover{transform:translateY(-2px); box-shadow:0 6px 16px rgba(91,95,240,.35);}
+  .btn.secondary{background:var(--accent2);}
+  #traceBox{margin-top:14px;}
+  .trace-step{
+    padding:10px 14px; border-left:3px solid var(--border); margin-bottom:6px; border-radius:8px;
+    background:var(--bg); opacity:0; transform:translateY(6px);
+  }
+  .trace-step.show{animation: slideDown .45s ease forwards;}
+  .trace-step.node{border-left-color:var(--accent);}
+  .trace-step.leaf-yes{border-left-color:var(--accent2); background:rgba(0,184,148,.08); font-weight:700;}
+  .trace-step.leaf-no{border-left-color:var(--bad); background:rgba(224,69,90,.08); font-weight:700;}
+  .pulse{animation: pulse 1s ease infinite;}
+  #resultBadge{
+    display:inline-block; margin-top:10px; padding:10px 18px; border-radius:12px; font-weight:700;
+    opacity:0;
+  }
+  #resultBadge.show{animation: slideDown .5s ease forwards;}
+  .ok-good{background:rgba(0,184,148,.15); color:var(--accent2);}
+  .ok-bad{background:rgba(224,69,90,.15); color:var(--bad);}
+  .quiz-q{margin-bottom:18px; padding-bottom:14px; border-bottom:1px dashed var(--border);}
+  .quiz-q:last-child{border-bottom:none;}
+  .quiz-opt{
+    display:flex; align-items:center; gap:8px; padding:8px 10px; border-radius:10px; margin:4px 0;
+    cursor:pointer; border:1px solid transparent; transition:background .25s ease;
+  }
+  .quiz-opt:hover{background:var(--bg);}
+  .quiz-opt input{accent-color:var(--accent);}
+  .feedback{
+    margin-top:8px; padding:8px 12px; border-radius:8px; font-size:13.5px; display:none;
+  }
+  .feedback.show{display:block; animation: slideDown .4s ease both;}
+  .feedback.correct{background:rgba(0,184,148,.15); color:var(--accent2);}
+  .feedback.wrong{background:rgba(224,69,90,.15); color:var(--bad);}
+  #quizScore{
+    margin-top:10px; font-weight:700; opacity:0;
+  }
+  #quizScore.show{animation: fadeInDown .5s ease forwards;}
+  .data-good, .data-bad{padding:12px 14px; border-radius:12px; font-size:13.5px;}
+  .data-good{background:rgba(0,184,148,.08); border:1px solid rgba(0,184,148,.35);}
+  .data-bad{background:rgba(224,69,90,.08); border:1px solid rgba(224,69,90,.35);}
+  footer{text-align:center; margin-top:30px; font-size:12.5px; color:var(--muted);}
+
+  @keyframes fadeInDown{
+    from{opacity:0; transform:translateY(-16px);}
+    to{opacity:1; transform:translateY(0);}
+  }
+  @keyframes slideUp{
+    from{opacity:0; transform:translateY(18px);}
+    to{opacity:1; transform:translateY(0);}
+  }
+  @keyframes slideDown{
+    from{opacity:0; transform:translateY(-8px);}
+    to{opacity:1; transform:translateY(0);}
+  }
+  @keyframes pulse{
+    0%,100%{transform:scale(1);}
+    50%{transform:scale(1.05);}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="topbar">
+    <span class="muted" style="font-size:13px;">Claude-lession · AI/ML Tiếng Việt</span>
+    <button class="toggle" onclick="toggleTheme()">🌙 / ☀️ Đổi giao diện</button>
+  </div>
+
+  <header class="hero">
+    <span class="badge">SUPERVISED LEARNING — CLASSIFICATION</span>
+    <h1>🌳 Cây Quyết Định (Decision Tree)</h1>
+    <p>Từ "chia để trị" tới overfitting — hiểu cây quyết định qua 4 trạng thái thật, có demo bấm chạy và quiz tự chấm.</p>
+  </header>
+
+  <!-- 1. ĐỊNH NGHĨA -->
+  <section>
+    <h2><span class="num">1</span> Định nghĩa ngắn gọn</h2>
+    <p><b>Cây quyết định</b> là mô hình học máy dự đoán bằng cách <b>đặt câu hỏi liên tiếp</b> về từng đặc trưng (feature) của dữ liệu, chia nhỏ dần tập dữ liệu cho tới khi mỗi nhóm nhỏ đủ "thuần" để đưa ra một câu trả lời (nhãn).</p>
+    <div class="ascii">Income > 50tr?
+├── Yes ──▶ Credit Score > 650?
+│              ├── Yes ──▶ ✅ DUYỆT VAY
+│              └── No  ──▶ ❌ TỪ CHỐI
+└── No  ──▶ Credit Score > 700?
+               ├── Yes ──▶ ✅ DUYỆT VAY
+               └── No  ──▶ ❌ TỪ CHỐI</div>
+    <p class="muted">Mỗi lần chia (split), thuật toán chọn câu hỏi giúp <b>giảm "độ hỗn loạn" (impurity)</b> nhiều nhất — đo bằng <code class="inline">Gini Impurity</code> hoặc <code class="inline">Entropy</code>.</p>
+  </section>
+
+  <!-- 2. BÀI TOÁN THỰC TẾ -->
+  <section>
+    <h2><span class="num">2</span> Bài toán thực tế: Duyệt vay ngân hàng</h2>
+    <p>Ngân hàng muốn tự động quyết định <b>duyệt / từ chối</b> khoản vay dựa trên <code class="inline">Thu nhập</code> và <code class="inline">Điểm tín dụng</code>.</p>
+    <table>
+      <thead><tr><th>Khách hàng</th><th>Thu nhập (triệu/tháng)</th><th>Điểm tín dụng</th><th>Nhãn thật</th></tr></thead>
+      <tbody>
+        <tr><td>A</td><td>60</td><td>700</td><td>✅ Duyệt</td></tr>
+        <tr><td>B</td><td>45</td><td>620</td><td>❌ Từ chối</td></tr>
+        <tr><td>C</td><td>80</td><td>680</td><td>✅ Duyệt</td></tr>
+        <tr><td>D</td><td>30</td><td>710</td><td>✅ Duyệt</td></tr>
+        <tr><td>E</td><td>55</td><td>600</td><td>❌ Từ chối</td></tr>
+        <tr><td>F</td><td>25</td><td>580</td><td>❌ Từ chối</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- 3. 4 TRẠNG THÁI -->
+  <section>
+    <h2><span class="num">3</span> 4 trạng thái của cây quyết định</h2>
+    <p class="muted">Cùng một dữ liệu, độ sâu (depth) khác nhau tạo ra 4 "phiên bản" mô hình rất khác nhau:</p>
+
+    <!-- State 1 -->
+    <div class="state-card">
+      <h3>🪵 Trạng thái 1 — Root Only (không chia) <span class="pill bad">❌ Xấu</span></h3>
+      <div class="ascii">   [ Tất cả 6 khách hàng ]
+          │
+          ▼
+     Dự đoán = nhãn phổ biến nhất (Duyệt: 3, Từ chối: 3 ▶ 50/50)</div>
+      <pre>from sklearn.tree import DecisionTreeClassifier
+model = DecisionTreeClassifier(max_depth=0)  # không chia được gì
+# Accuracy train ≈ 50%  |  Accuracy test ≈ 50%</pre>
+      <p class="muted">Không học được gì — cây chỉ đoán theo số đông. <b>Underfit nghiêm trọng.</b></p>
+    </div>
+
+    <!-- State 2 -->
+    <div class="state-card">
+      <h3>🌱 Trạng thái 2 — Shallow Tree (depth=1) <span class="pill ok">⚠️ Trung bình</span></h3>
+      <div class="ascii">        Income > 50tr?
+        ├── Yes ▶ ✅ Duyệt (3/3 đúng: A,C — sai D bị bỏ ngoài nhánh)
+        └── No  ▶ ❌ Từ chối (đúng E,F — sai D)</div>
+      <pre>model = DecisionTreeClassifier(max_depth=1)
+# Accuracy train ≈ 83%  |  Accuracy test ≈ 70%</pre>
+      <p class="muted">Đã tách được phần lớn, nhưng khách <b>D</b> (thu nhập thấp, tín dụng cao) bị đoán sai vì cây chỉ hỏi 1 câu. <b>Vẫn underfit nhẹ.</b></p>
+    </div>
+
+    <!-- State 3 -->
+    <div class="state-card">
+      <h3>🌳 Trạng thái 3 — Balanced Tree (depth=2, Gini) <span class="pill good">✅ Tốt</span></h3>
+      <div class="ascii">Income > 50tr?
+├── Yes ▶ Credit Score > 650? ── Yes ▶ ✅  |  No ▶ ❌
+└── No  ▶ Credit Score > 700? ── Yes ▶ ✅  |  No ▶ ❌</div>
+      <pre>model = DecisionTreeClassifier(max_depth=2, criterion="gini")
+# Accuracy train ≈ 100%  |  Accuracy test ≈ 90%</pre>
+      <p class="muted">Thêm 1 câu hỏi phụ giải quyết đúng trường hợp D. Độ sâu vừa đủ → <b>tổng quát hóa tốt</b> trên dữ liệu mới.</p>
+    </div>
+
+    <!-- State 4 -->
+    <div class="state-card">
+      <h3>🌲 Trạng thái 4 — Deep / Overfit Tree (depth không giới hạn) <span class="pill bad">❌ Xấu</span></h3>
+      <div class="ascii">Income>50? ▶ Score>650? ▶ Age>30? ▶ Zipcode=X? ▶ Ngày nộp hồ sơ=? ...
+   (cây nhớ CHÍNH XÁC từng khách hàng trong tập train)</div>
+      <pre>model = DecisionTreeClassifier(max_depth=None)
+# Accuracy train = 100%  |  Accuracy test ≈ 68% (giảm mạnh!)</pre>
+      <p class="muted">Cây chia tới khi mỗi lá chỉ còn 1 người → <b>học thuộc lòng nhiễu</b> (noise) thay vì quy luật. <b>Overfitting.</b></p>
+    </div>
+  </section>
+
+  <!-- BẢNG SO SÁNH -->
+  <section>
+    <h2><span class="num">4</span> Bảng so sánh tổng hợp</h2>
+    <table>
+      <thead><tr><th>Trạng Thái</th><th>Input</th><th>Xử Lý</th><th>Output</th><th>Đánh Giá</th></tr></thead>
+      <tbody>
+        <tr><td>Root Only</td><td>6 khách hàng</td><td>Không chia, đoán số đông</td><td>Acc train/test ≈ 50%/50%</td><td class="grade-bad">❌ Underfit nặng</td></tr>
+        <tr><td>Shallow (depth=1)</td><td>6 khách hàng</td><td>1 câu hỏi (Income)</td><td>Acc train/test ≈ 83%/70%</td><td class="grade-ok">⚠️ Underfit nhẹ</td></tr>
+        <tr><td>Balanced (depth=2)</td><td>6 khách hàng</td><td>2 câu hỏi (Income → Score)</td><td>Acc train/test ≈ 100%/90%</td><td class="grade-good">✅ Cân bằng tốt</td></tr>
+        <tr><td>Deep (depth=∞)</td><td>6 khách hàng</td><td>Chia tới khi mỗi lá 1 người</td><td>Acc train/test = 100%/68%</td><td class="grade-bad">❌ Overfit</td></tr>
+      </tbody>
+    </table>
+    <p class="muted">💡 <b>Bài học:</b> độ chính xác trên tập train không nói lên điều gì — luôn nhìn <b>tập test</b>. Đây cũng là lý do người ta dùng <code class="inline">max_depth</code>, <code class="inline">min_samples_leaf</code>, hoặc <b>pruning (tỉa cây)</b> để kiểm soát độ phức tạp.</p>
+  </section>
+
+  <!-- DEMO TƯƠNG TÁC -->
+  <section>
+    <h2><span class="num">5</span> Demo: Tự chạy cây quyết định (depth=2)</h2>
+    <p class="muted">Nhập thông tin khách hàng, bấm <b>Chạy Demo</b> để xem cây "suy nghĩ" từng bước.</p>
+    <div class="demo-box">
+      <label>Thu nhập (triệu/tháng)
+        <input type="number" id="incomeInput" value="42" min="0" max="200">
+      </label>
+      <label>Điểm tín dụng
+        <input type="number" id="scoreInput" value="705" min="300" max="850">
+      </label>
+    </div>
+    <button class="btn" onclick="runDemo()">▶ Chạy Demo</button>
+    <button class="btn secondary" onclick="randomDemo()">🎲 Dữ liệu ngẫu nhiên</button>
+    <div id="traceBox"></div>
+    <div id="resultBadge"></div>
+  </section>
+
+  <!-- DỮ LIỆU TỐT vs XẤU -->
+  <section>
+    <h2><span class="num">6</span> Dữ liệu tốt vs dữ liệu xấu</h2>
+    <div class="grid2">
+      <div class="data-good">
+        <b>✅ Dữ liệu tốt</b>
+        <ul>
+          <li>Đủ số lượng mẫu cho cả 2 lớp (không lệch 95/5)</li>
+          <li>Không thiếu giá trị (missing) ở feature quan trọng</li>
+          <li>Nhãn được gán nhất quán, không mâu thuẫn</li>
+          <li>VD: 500 hồ sơ vay, tỉ lệ duyệt/từ chối ≈ 55/45</li>
+        </ul>
+      </div>
+      <div class="data-bad">
+        <b>❌ Dữ liệu xấu</b>
+        <ul>
+          <li>Mất cân bằng nặng: 980 "Từ chối" / 20 "Duyệt" → cây chỉ học đoán "Từ chối"</li>
+          <li>Nhiễu nhãn: 2 hồ sơ giống hệt nhau nhưng nhãn khác nhau</li>
+          <li>Thiếu dữ liệu (NaN) ở cột Điểm tín dụng mà không xử lý</li>
+          <li>Feature rò rỉ (leakage): dùng "Ngày giải ngân" để dự đoán duyệt vay</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- BÀI TẬP + QUIZ -->
+  <section>
+    <h2><span class="num">7</span> Bài tập nhỏ</h2>
+    <p>Cho khách hàng: <b>Thu nhập = 48tr, Điểm tín dụng = 640</b>. Dùng cây ở Trạng thái 3 (depth=2) ở trên, hãy tự tay lần theo cây và đoán xem kết quả là gì trước khi bấm demo kiểm tra lại phía trên.</p>
+
+    <h2 style="margin-top:26px;"><span class="num">?</span> Quiz tự kiểm tra</h2>
+
+    <div class="quiz-q">
+      <p><b>Câu 1.</b> Chỉ số nào KHÔNG được dùng để chọn điểm chia (split) trong cây quyết định?</p>
+      <label class="quiz-opt"><input type="radio" name="q1" value="wrong">Gini Impurity</label>
+      <label class="quiz-opt"><input type="radio" name="q1" value="wrong">Entropy / Information Gain</label>
+      <label class="quiz-opt"><input type="radio" name="q1" value="right">Learning Rate</label>
+      <div class="feedback" id="fb-q1"></div>
+    </div>
+
+    <div class="quiz-q">
+      <p><b>Câu 2.</b> Ở "Trạng thái 4" (cây rất sâu), vì sao accuracy train = 100% nhưng test lại tệ hơn?</p>
+      <label class="quiz-opt"><input type="radio" name="q2" value="wrong">Vì máy tính tính sai</label>
+      <label class="quiz-opt"><input type="radio" name="q2" value="right">Vì cây học thuộc luôn cả nhiễu trong tập train (overfitting)</label>
+      <label class="quiz-opt"><input type="radio" name="q2" value="wrong">Vì tập test có ít mẫu hơn tập train</label>
+      <div class="feedback" id="fb-q2"></div>
+    </div>
+
+    <div class="quiz-q">
+      <p><b>Câu 3.</b> Cách nào giúp giảm overfitting cho cây quyết định?</p>
+      <label class="quiz-opt"><input type="radio" name="q3" value="wrong">Tăng max_depth lên vô hạn</label>
+      <label class="quiz-opt"><input type="radio" name="q3" value="right">Giới hạn max_depth hoặc min_samples_leaf, hoặc pruning</label>
+      <label class="quiz-opt"><input type="radio" name="q3" value="wrong">Xóa bớt dữ liệu test</label>
+      <div class="feedback" id="fb-q3"></div>
+    </div>
+
+    <button class="btn" onclick="checkQuiz()">✅ Chấm điểm</button>
+    <div id="quizScore"></div>
+  </section>
+
+  <footer>
+    Claude-lession · Bài giảng AI/ML tiếng Việt tự động · Chủ đề tham khảo từ khóa học <i>AI For Beginners</i>.
+  </footer>
+</div>
+
+<script>
+function toggleTheme(){
+  const root = document.documentElement;
+  const cur = root.getAttribute('data-theme');
+  root.setAttribute('data-theme', cur === 'dark' ? 'light' : 'dark');
+  try{ localStorage.setItem('lesson-theme', root.getAttribute('data-theme')); }catch(e){}
+}
+(function initTheme(){
+  try{
+    const saved = localStorage.getItem('lesson-theme');
+    if(saved){ document.documentElement.setAttribute('data-theme', saved); }
+    else if(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches){
+      document.documentElement.setAttribute('data-theme','dark');
+    }
+  }catch(e){}
+})();
+
+function traverseTree(income, score){
+  const steps = [];
+  let result;
+  steps.push({type:'node', text:`🌳 Bắt đầu: Income = ${income}tr, Score = ${score}`});
+  if(income > 50){
+    steps.push({type:'node', text:`❓ Income > 50? → ${income} > 50 = ĐÚNG ▶ đi nhánh trái`});
+    if(score > 650){
+      steps.push({type:'node', text:`❓ Credit Score > 650? → ${score} > 650 = ĐÚNG`});
+      result = true;
+    } else {
+      steps.push({type:'node', text:`❓ Credit Score > 650? → ${score} > 650 = SAI`});
+      result = false;
+    }
+  } else {
+    steps.push({type:'node', text:`❓ Income > 50? → ${income} > 50 = SAI ▶ đi nhánh phải`});
+    if(score > 700){
+      steps.push({type:'node', text:`❓ Credit Score > 700? → ${score} > 700 = ĐÚNG`});
+      result = true;
+    } else {
+      steps.push({type:'node', text:`❓ Credit Score > 700? → ${score} > 700 = SAI`});
+      result = false;
+    }
+  }
+  steps.push({type: result ? 'leaf-yes' : 'leaf-no', text: result ? '🏁 Kết quả lá: ✅ DUYỆT VAY' : '🏁 Kết quả lá: ❌ TỪ CHỐI'});
+  return {steps, result};
+}
+
+function runDemo(){
+  const income = parseFloat(document.getElementById('incomeInput').value) || 0;
+  const score = parseFloat(document.getElementById('scoreInput').value) || 0;
+  const {steps, result} = traverseTree(income, score);
+
+  const box = document.getElementById('traceBox');
+  box.innerHTML = '';
+  steps.forEach((s, i) => {
+    const div = document.createElement('div');
+    div.className = 'trace-step ' + s.type;
+    div.textContent = s.text;
+    box.appendChild(div);
+    setTimeout(() => div.classList.add('show'), i * 260);
+  });
+
+  const badge = document.getElementById('resultBadge');
+  badge.className = '';
+  setTimeout(() => {
+    badge.textContent = result ? '✅ DUYỆT VAY' : '❌ TỪ CHỐI HỒ SƠ';
+    badge.className = (result ? 'ok-good' : 'ok-bad') + ' show';
+  }, steps.length * 260 + 100);
+}
+
+function randomDemo(){
+  document.getElementById('incomeInput').value = Math.floor(Math.random()*100)+10;
+  document.getElementById('scoreInput').value = Math.floor(Math.random()*350)+400;
+  runDemo();
+}
+
+const ANSWERS = {q1:'right', q2:'right', q3:'right'};
+function checkQuiz(){
+  let score = 0;
+  Object.keys(ANSWERS).forEach(q => {
+    const chosen = document.querySelector(`input[name="${q}"]:checked`);
+    const fb = document.getElementById('fb-' + q);
+    fb.classList.remove('correct','wrong');
+    if(!chosen){
+      fb.textContent = '⚠️ Bạn chưa chọn đáp án cho câu này.';
+      fb.classList.add('wrong','show');
+      return;
+    }
+    if(chosen.value === 'right'){
+      score++;
+      fb.textContent = '✅ Chính xác!';
+      fb.classList.add('correct','show');
+    } else {
+      fb.textContent = '❌ Chưa đúng, xem lại phần Trạng thái ở trên nhé.';
+      fb.classList.add('wrong','show');
+    }
+  });
+  const scoreBox = document.getElementById('quizScore');
+  scoreBox.textContent = `Điểm của bạn: ${score}/3`;
+  scoreBox.className = 'show';
+}
+</script>
+</body>
+</html>

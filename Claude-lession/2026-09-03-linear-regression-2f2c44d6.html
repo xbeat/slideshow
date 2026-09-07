@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Linear Regression: Tìm Đường Thẳng Khớp Nhất — Học AI/ML dễ hiểu</title>
+<style>
+  :root{
+    --bg:#f6f7fb; --bg2:#ffffff; --text:#1c1f2b; --muted:#5b6072;
+    --accent:#5b5ff0; --accent2:#00b894; --warn:#f0a500; --bad:#e0455a;
+    --border:#e3e5ef; --card:#ffffff; --code-bg:#1c1f2b; --code-text:#e8eaf6;
+    --shadow: 0 8px 24px rgba(30,32,60,0.08);
+  }
+  [data-theme="dark"]{
+    --bg:#12131c; --bg2:#181a26; --text:#eceefb; --muted:#a2a6c2;
+    --accent:#8b8ffb; --accent2:#3ddc97; --warn:#ffc233; --bad:#ff6b7d;
+    --border:#2a2d40; --card:#1c1e2c; --code-bg:#0d0e16; --code-text:#dfe2f7;
+    --shadow: 0 8px 28px rgba(0,0,0,0.45);
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; font-family:"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+    background:var(--bg); color:var(--text); transition:background .4s ease,color .4s ease;
+    line-height:1.6;
+  }
+  .wrap{max-width:960px; margin:0 auto; padding:20px 16px 80px;}
+  header.hero{
+    text-align:center; padding:36px 20px; border-radius:20px;
+    background:linear-gradient(135deg,var(--accent),#9b8cff);
+    color:#fff; box-shadow:var(--shadow);
+    animation: fadeInDown .7s ease both;
+    position:relative;
+  }
+  header.hero h1{margin:0 0 8px; font-size:clamp(22px,4vw,34px);}
+  header.hero p{margin:0; opacity:.92; font-size:15px;}
+  .topbar{display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:14px;}
+  .badge{
+    display:inline-block; background:rgba(255,255,255,.18); padding:4px 12px;
+    border-radius:999px; font-size:12px; letter-spacing:.5px; margin-bottom:10px;
+  }
+  button.toggle{
+    background:var(--card); color:var(--text); border:1px solid var(--border);
+    padding:8px 14px; border-radius:999px; cursor:pointer; font-size:13px;
+    box-shadow:var(--shadow); transition:transform .25s ease, background .3s ease;
+  }
+  button.toggle:hover{transform:translateY(-2px);}
+  section{
+    background:var(--card); border:1px solid var(--border); border-radius:16px;
+    padding:22px 20px; margin-top:22px; box-shadow:var(--shadow);
+    animation: slideUp .6s ease both;
+  }
+  section h2{margin-top:0; font-size:20px; display:flex; align-items:center; gap:8px;}
+  section h2 .num{
+    background:var(--accent); color:#fff; width:28px; height:28px; border-radius:50%;
+    display:inline-flex; align-items:center; justify-content:center; font-size:14px; flex:none;
+  }
+  p{color:var(--text);}
+  .muted{color:var(--muted);}
+  code, pre{font-family:"Fira Code",Consolas,monospace;}
+  pre{
+    background:var(--code-bg); color:var(--code-text); padding:14px 16px; border-radius:12px;
+    overflow-x:auto; font-size:13px; line-height:1.55;
+  }
+  code.inline{background:var(--code-bg); color:var(--code-text); padding:2px 6px; border-radius:6px; font-size:.9em;}
+  table{width:100%; border-collapse:collapse; margin:12px 0; font-size:14px; overflow-x:auto; display:block;}
+  table thead, table tbody{width:100%;}
+  th,td{border:1px solid var(--border); padding:8px 10px; text-align:left; vertical-align:top;}
+  th{background:var(--bg); color:var(--muted); font-weight:600;}
+  .grade-good{color:var(--accent2); font-weight:700;}
+  .grade-ok{color:var(--warn); font-weight:700;}
+  .grade-bad{color:var(--bad); font-weight:700;}
+  .state-card{
+    border:1px dashed var(--border); border-radius:14px; padding:16px; margin:14px 0;
+    background:var(--bg); animation: slideUp .5s ease both;
+  }
+  .state-card h3{margin:0 0 6px; font-size:16px; display:flex; align-items:center; gap:8px; flex-wrap:wrap;}
+  .pill{font-size:11px; padding:3px 10px; border-radius:999px; font-weight:700;}
+  .pill.good{background:rgba(0,184,148,.15); color:var(--accent2);}
+  .pill.ok{background:rgba(240,165,0,.15); color:var(--warn);}
+  .pill.bad{background:rgba(224,69,90,.15); color:var(--bad);}
+  .ascii{
+    background:var(--code-bg); color:var(--code-text); padding:14px; border-radius:12px;
+    font-family:"Fira Code",Consolas,monospace; font-size:12.5px; white-space:pre; overflow-x:auto;
+  }
+  .grid2{display:grid; grid-template-columns:1fr; gap:14px;}
+  @media(min-width:720px){.grid2{grid-template-columns:1fr 1fr;}}
+  .metric-row{display:flex; flex-wrap:wrap; gap:10px; margin:12px 0;}
+  .metric-box{
+    flex:1; min-width:120px; padding:10px 12px; border-radius:10px; background:var(--bg2);
+    border:1px solid var(--border); text-align:center;
+  }
+  .metric-box .v{font-size:20px; font-weight:800;}
+  .metric-box .k{font-size:11.5px; color:var(--muted);}
+  .radio-row{display:flex; gap:14px; flex-wrap:wrap; margin:10px 0;}
+  .radio-row label{display:flex; align-items:center; gap:6px; font-size:13.5px; cursor:pointer;
+    padding:7px 12px; border:1px solid var(--border); border-radius:10px; background:var(--bg2);
+    transition:background .25s ease;}
+  .radio-row label:hover{background:var(--bg);}
+  .radio-row input{accent-color:var(--accent);}
+  .btn{
+    background:var(--accent); color:#fff; border:none; padding:11px 20px; border-radius:10px;
+    font-size:14px; cursor:pointer; font-weight:600; transition:transform .25s ease, box-shadow .25s ease;
+  }
+  .btn:hover{transform:translateY(-2px); box-shadow:0 6px 16px rgba(91,95,240,.35);}
+  .btn.secondary{background:var(--accent2);}
+  .pulse{animation: pulse 1s ease infinite;}
+  #resultBadge{
+    display:inline-block; margin-top:14px; padding:10px 18px; border-radius:12px; font-weight:700;
+    opacity:0;
+  }
+  #resultBadge.show{animation: slideDown .5s ease forwards;}
+  .ok-good{background:rgba(0,184,148,.15); color:var(--accent2);}
+  .ok-bad{background:rgba(224,69,90,.15); color:var(--bad);}
+  .ok-ok{background:rgba(240,165,0,.15); color:var(--warn);}
+  .quiz-q{margin-bottom:18px; padding-bottom:14px; border-bottom:1px dashed var(--border);}
+  .quiz-q:last-child{border-bottom:none;}
+  .quiz-opt{
+    display:flex; align-items:center; gap:8px; padding:8px 10px; border-radius:10px; margin:4px 0;
+    cursor:pointer; border:1px solid transparent; transition:background .25s ease;
+  }
+  .quiz-opt:hover{background:var(--bg);}
+  .quiz-opt input{accent-color:var(--accent);}
+  .feedback{
+    margin-top:8px; padding:8px 12px; border-radius:8px; font-size:13.5px; display:none;
+  }
+  .feedback.show{display:block; animation: slideDown .4s ease both;}
+  .feedback.correct{background:rgba(0,184,148,.15); color:var(--accent2);}
+  .feedback.wrong{background:rgba(224,69,90,.15); color:var(--bad);}
+  #quizScore, #warmupScore{
+    margin-top:10px; font-weight:700; opacity:0;
+  }
+  #quizScore.show, #warmupScore.show{animation: fadeInDown .5s ease forwards;}
+  .data-good, .data-bad{padding:12px 14px; border-radius:12px; font-size:13.5px;}
+  .data-good{background:rgba(0,184,148,.08); border:1px solid rgba(0,184,148,.35);}
+  .data-bad{background:rgba(224,69,90,.08); border:1px solid rgba(224,69,90,.35);}
+  .warmup-box{
+    border:1px dashed var(--border); border-radius:14px; padding:14px 16px; margin:12px 0;
+    background:var(--bg);
+  }
+  .warmup-box h4{margin:0 0 8px; font-size:14.5px;}
+  .fillblank{
+    padding:9px 12px; border-radius:10px; border:1px solid var(--border);
+    background:var(--bg2); color:var(--text); font-size:14px; width:220px; max-width:100%;
+  }
+  select.matchsel{
+    padding:8px 10px; border-radius:8px; border:1px solid var(--border);
+    background:var(--bg2); color:var(--text); font-size:13.5px;
+  }
+  .match-row{display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin:6px 0;}
+  .svgwrap{
+    background:var(--bg2); border:1px solid var(--border); border-radius:14px; padding:8px;
+    max-width:380px; margin:14px auto;
+  }
+  .diverge-warn{
+    text-align:center; padding:26px 10px; font-weight:700; color:var(--bad);
+  }
+  footer{text-align:center; margin-top:30px; font-size:12.5px; color:var(--muted);}
+
+  @keyframes fadeInDown{
+    from{opacity:0; transform:translateY(-16px);}
+    to{opacity:1; transform:translateY(0);}
+  }
+  @keyframes slideUp{
+    from{opacity:0; transform:translateY(18px);}
+    to{opacity:1; transform:translateY(0);}
+  }
+  @keyframes slideDown{
+    from{opacity:0; transform:translateY(-8px);}
+    to{opacity:1; transform:translateY(0);}
+  }
+  @keyframes pulse{
+    0%,100%{transform:scale(1);}
+    50%{transform:scale(1.05);}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="topbar">
+    <span class="muted" style="font-size:13px;">Claude-lession · AI/ML Tiếng Việt</span>
+    <button class="toggle" onclick="toggleTheme()">🌙 / ☀️ Đổi giao diện</button>
+  </div>
+
+  <header class="hero">
+    <span class="badge">SUPERVISED LEARNING — LINEAR REGRESSION</span>
+    <h1>📈 Linear Regression: Tìm Đường Thẳng Khớp Nhất Với Dữ Liệu</h1>
+    <p>Một sàn giao dịch bất động sản có 12 căn nhà với <b>Diện tích</b> và <b>Giá bán</b> — nhìn qua có vẻ giá tăng gần như tuyến tính theo diện tích. Linear Regression đi tìm đường thẳng <code class="inline">ŷ = w·x + b</code> "khớp" nhất với xu hướng đó — nhưng chọn sai learning rate hay dừng huấn luyện quá sớm là kết quả lệch hẳn khỏi tối ưu. Có demo trực quan đường hồi quy + quiz tự chấm.</p>
+  </header>
+
+  <!-- KHỞI ĐỘNG NHANH -->
+  <section>
+    <h2><span class="num">0</span> Khởi động nhanh (60 giây)</h2>
+    <p class="muted">Trả lời nhanh 3 câu dưới đây trước khi học — không cần đúng hết, chỉ để "hâm nóng" não bạn.</p>
+
+    <div class="warmup-box">
+      <h4>1️⃣ Trắc nghiệm nhanh</h4>
+      <p>Trong công thức <code class="inline">ŷ = w·x + b</code>, đại lượng nào cho biết "giá nhà tăng thêm bao nhiêu triệu khi diện tích tăng thêm 1 m²"?</p>
+      <label class="quiz-opt"><input type="radio" name="w1" value="wrong">b (hệ số chặn / intercept)</label>
+      <label class="quiz-opt"><input type="radio" name="w1" value="right">w (hệ số góc / slope)</label>
+      <label class="quiz-opt"><input type="radio" name="w1" value="wrong">MSE (sai số bình phương trung bình)</label>
+    </div>
+
+    <div class="warmup-box">
+      <h4>2️⃣ Điền khuyết</h4>
+      <p>Hàm mất mát phổ biến nhất để tìm ra w, b tốt nhất trong Linear Regression là <b>trung bình bình phương sai số</b>, viết tắt là <b>______</b>.</p>
+      <input class="fillblank" type="text" id="w2input" placeholder="Nhập từ khoá...">
+    </div>
+
+    <div class="warmup-box">
+      <h4>3️⃣ Đối chiếu với bản mẫu</h4>
+      <p>Ghép mỗi tình huống với hậu quả tương ứng:</p>
+      <div class="match-row">Learning rate quá lớn trong Gradient Descent →
+        <select class="matchsel" id="m1">
+          <option value="">-- chọn --</option>
+          <option value="diverge">Loss tăng vọt qua từng vòng lặp, mô hình "phân kỳ" (diverge)</option>
+          <option value="underfit">Hệ số w, b chưa kịp hội tụ về giá trị tối ưu, mô hình vẫn còn "non"</option>
+        </select>
+      </div>
+      <div class="match-row">Dừng Gradient Descent quá sớm (quá ít epoch) →
+        <select class="matchsel" id="m2">
+          <option value="">-- chọn --</option>
+          <option value="diverge">Loss tăng vọt qua từng vòng lặp, mô hình "phân kỳ" (diverge)</option>
+          <option value="underfit">Hệ số w, b chưa kịp hội tụ về giá trị tối ưu, mô hình vẫn còn "non"</option>
+        </select>
+      </div>
+    </div>
+
+    <button class="btn" onclick="checkWarmup()">✅ Kiểm tra khởi động</button>
+    <div id="warmupScore"></div>
+  </section>
+
+  <!-- 1. ĐỊNH NGHĨA -->
+  <section>
+    <h2><span class="num">1</span> Định nghĩa ngắn gọn</h2>
+    <p><b>Linear Regression (Hồi quy tuyến tính)</b> là thuật toán <b>supervised learning</b> để dự đoán một giá trị số liên tục (y) từ một hoặc nhiều đặc trưng đầu vào (x), bằng cách giả định quan hệ giữa chúng gần như một <b>đường thẳng</b>: <code class="inline">ŷ = w·x + b</code>. Việc "học" chính là đi tìm <b>w</b> (hệ số góc) và <b>b</b> (hệ số chặn) sao cho đường thẳng đó <b>khớp nhất</b> với dữ liệu thật — tức là <b>tổng bình phương sai số nhỏ nhất</b> (Ordinary Least Squares).</p>
+    <div class="ascii">  Dữ liệu (x, y): x = Diện tích (m²), y = Giá nhà (triệu VNĐ)
+                              │
+       Giả thuyết (hypothesis): ŷ = w·x + b     ← đường thẳng cần tìm
+                              │
+    Hàm mất mát (Cost function): MSE = (1/n) · Σ (yᵢ - ŷᵢ)²
+                              │
+              Tối ưu hoá: tìm w*, b* sao cho MSE nhỏ nhất
+                    ┌─────────────────┴─────────────────┐
+        Normal Equation (closed-form)            Gradient Descent (lặp dần)
+        w = Σ(xᵢ-x̄)(yᵢ-ȳ) / Σ(xᵢ-x̄)²             w ← w - η · ∂MSE/∂w   (mỗi epoch)
+        b = ȳ - w·x̄                              b ← b - η · ∂MSE/∂b   (lặp nhiều epoch)
+                    └─────────────────┬─────────────────┘
+                          ŷ = w*·x + b*   ← đường thẳng "khớp" nhất với dữ liệu</div>
+    <p class="muted">Chọn <b>sai learning rate (η)</b> hoặc <b>dừng Gradient Descent quá sớm</b> sẽ khiến w, b không bao giờ tới được điểm tối ưu — đây chính là thứ ta sẽ "vặn tay" trong phần Demo bên dưới.</p>
+  </section>
+
+  <!-- 2. BÀI TOÁN THỰC TẾ -->
+  <section>
+    <h2><span class="num">2</span> Bài toán thực tế: Dự đoán giá nhà theo diện tích 🏠</h2>
+    <p>Một sàn giao dịch có dữ liệu <b>12 căn nhà</b> đã bán, với <b>Diện tích (m²)</b> và <b>Giá bán (triệu VNĐ)</b>. Nhìn scatter plot, các điểm nằm khá gần một đường thẳng — Linear Regression sẽ tìm ra đường đó để dự đoán giá cho những căn nhà mới, chỉ cần biết diện tích.</p>
+    <table>
+      <thead><tr><th>Căn nhà</th><th>Diện tích (m²)</th><th>Giá bán (triệu VNĐ)</th></tr></thead>
+      <tbody>
+        <tr><td>1 – 3</td><td>30, 35, 40</td><td>480, 585, 635</td></tr>
+        <tr><td>4 – 6</td><td>45, 50, 55</td><td>745, 790, 890</td></tr>
+        <tr><td>7 – 9</td><td>60, 65, 70</td><td>925, 1035, 1095</td></tr>
+        <tr><td>10 – 12</td><td>80, 90, 100</td><td>1280, 1380, 1565</td></tr>
+      </tbody>
+    </table>
+    <p class="muted">Trung bình: Diện tích x̄ = 60 m², Giá ȳ ≈ 950.42 triệu. Nghiệm tối ưu (Normal Equation) cho ra <b>w* ≈ 15.18</b> (mỗi m² tăng thêm ứng với ~15.18 triệu) và <b>b* ≈ 39.38</b> triệu. Ba trạng thái tiếp theo cho thấy Gradient Descent "đi lệch" khỏi nghiệm này như thế nào nếu chọn sai siêu tham số.</p>
+  </section>
+
+  <!-- 3. 4 TRẠNG THÁI -->
+  <section>
+    <h2><span class="num">3</span> 4 trạng thái khi huấn luyện Linear Regression trên cùng bộ dữ liệu</h2>
+    <p class="muted">Cùng 12 căn nhà trên, chỉ đổi cách tìm w, b — xem sai số (MSE) và R² thay đổi ra sao:</p>
+
+    <!-- State 1 -->
+    <div class="state-card">
+      <h3>❌ Trạng thái 1 — Baseline: chỉ đoán giá trung bình <span class="pill bad">❌ Xấu</span></h3>
+      <div class="ascii">  Không học w, b nào cả — luôn dự đoán ŷ = ȳ = 950.42 triệu, BẤT KỂ diện tích bao nhiêu
+  Nhà 30 m² → dự đoán 950.42 triệu (thực tế 480)    Nhà 100 m² → dự đoán 950.42 triệu (thực tế 1565)
+
+  MSE = 102,122.74     R² = 0.0000     ← "mức sàn": mô hình không dùng thông tin Diện tích chút nào</div>
+      <pre>y_pred = np.full_like(y, y.mean())     # "mô hình" chỉ đoán trung bình, bỏ qua X
+mean_squared_error(y, y_pred)          # 102122.74
+r2_score(y, y_pred)                    # 0.0 — theo định nghĩa, baseline trung bình luôn có R²=0</pre>
+      <p class="muted">Đây là điểm xuất phát để so sánh: nếu một mô hình "học" ra mà vẫn không tốt hơn baseline này, nó vô dụng.</p>
+    </div>
+
+    <!-- State 2 -->
+    <div class="state-card">
+      <h3>❌ Trạng thái 2 — Gradient Descent, learning rate quá lớn (phân kỳ) <span class="pill bad">❌ Xấu</span></h3>
+      <div class="ascii">  η = 0.001 — quá lớn so với thang đo dữ liệu Diện tích (30-100)
+  Epoch 1: w ≈ 1806     Epoch 5: w ≈ -1,209,354     Epoch 8: w ≈ -100,108,683   (!!)
+
+  Loss KHÔNG giảm dần mà TĂNG VỌT qua từng epoch → mỗi bước "nhảy" quá xa, vượt qua đáy hàm mất mát
+  MSE, w, b → phân kỳ (diverge), tiến tới vô cùng thay vì hội tụ</div>
+      <pre>w, b = 0.0, 0.0
+lr = 0.001                              # quá lớn cho scale dữ liệu này!
+for epoch in range(8):
+    y_pred = w*X + b
+    dw = (2/n) * np.sum((y_pred - y) * X)
+    db = (2/n) * np.sum(y_pred - y)
+    w -= lr * dw; b -= lr * db
+# w ≈ -100,108,683 — hệ số "nổ tung", mô hình hoàn toàn vô dụng</pre>
+      <p class="muted">Learning rate không phải "càng lớn càng học nhanh" — quá lớn thì thuật toán bị "văng" ra khỏi vùng hội tụ ngay từ vài bước đầu.</p>
+    </div>
+
+    <!-- State 3 -->
+    <div class="state-card">
+      <h3>⚠️ Trạng thái 3 — Gradient Descent dừng quá sớm (1 epoch) <span class="pill ok">⚠️ Trung bình</span></h3>
+      <div class="ascii">  η = 0.0001 (hợp lý) nhưng chỉ chạy ĐÚNG 1 epoch rồi dừng
+
+  w ≈ 12.75, b ≈ 0.19     so với nghiệm tối ưu w* ≈ 15.18, b* ≈ 39.38
+  MSE = 37,312.16     R² = 0.6346     ← khá hơn baseline nhiều, nhưng còn xa mức tối ưu (R²=0.9971)</div>
+      <pre>w, b = 0.0, 0.0
+lr = 0.0001
+for epoch in range(1):                  # chỉ 1 epoch — dừng quá sớm!
+    y_pred = w*X + b
+    dw = (2/n) * np.sum((y_pred - y) * X)
+    db = (2/n) * np.sum(y_pred - y)
+    w -= lr * dw; b -= lr * db
+# w=12.75, b=0.19 — đúng hướng nhưng CHƯA kịp hội tụ</pre>
+      <p class="muted">Learning rate đúng không có nghĩa là xong — Gradient Descent cần <b>đủ số epoch</b> để w, b thực sự "đi" tới điểm tối ưu.</p>
+    </div>
+
+    <!-- State 4 -->
+    <div class="state-card">
+      <h3>✅ Trạng thái 4 — Normal Equation / Gradient Descent hội tụ đủ <span class="pill good">✅ Tốt</span></h3>
+      <div class="ascii">  Normal Equation (closed-form) — giải trực tiếp công thức toán, không cần chọn learning rate hay epoch
+
+  w* = Σ(xᵢ-x̄)(yᵢ-ȳ) / Σ(xᵢ-x̄)² = 15.18       b* = ȳ - w*·x̄ = 39.38
+  MSE = 295.30     R² = 0.9971     ← gần như khớp hoàn hảo với xu hướng tuyến tính của dữ liệu</div>
+      <pre>from sklearn.linear_model import LinearRegression
+model = LinearRegression().fit(X.reshape(-1,1), y)
+model.coef_, model.intercept_          # [15.18], 39.38
+r2_score(y, model.predict(X.reshape(-1,1)))   # 0.9971</pre>
+      <p class="muted">Đây mới là Linear Regression "đúng chuẩn": dùng Normal Equation (khi dữ liệu nhỏ) hoặc Gradient Descent với learning rate hợp lý và đủ epoch để hội tụ về đúng nghiệm tối ưu.</p>
+    </div>
+  </section>
+
+  <!-- BẢNG SO SÁNH -->
+  <section>
+    <h2><span class="num">4</span> Bảng so sánh tổng hợp</h2>
+    <table>
+      <thead><tr><th>Trạng Thái</th><th>Input</th><th>Xử Lý</th><th>Output</th><th>Đánh Giá</th></tr></thead>
+      <tbody>
+        <tr><td>Baseline (giá trung bình)</td><td>12 căn nhà (x,y)</td><td>Không học w,b, luôn đoán ȳ</td><td>R²=0.0, MSE=102122.74</td><td class="grade-bad">❌ Không dùng Diện tích</td></tr>
+        <tr><td>GD learning rate quá lớn</td><td>Cùng dữ liệu</td><td>8 epoch, η=0.001</td><td>w phân kỳ, MSE → ∞</td><td class="grade-bad">❌ Mô hình vô dụng</td></tr>
+        <tr><td>GD dừng quá sớm (1 epoch)</td><td>Cùng dữ liệu</td><td>1 epoch, η=0.0001</td><td>R²=0.6346, MSE=37312.16</td><td class="grade-ok">⚠️ Chưa hội tụ</td></tr>
+        <tr><td>Normal Equation / GD hội tụ</td><td>Cùng dữ liệu</td><td>Giải closed-form hoặc đủ epoch</td><td>R²=0.9971, MSE=295.30</td><td class="grade-good">✅ Khớp tốt với dữ liệu</td></tr>
+      </tbody>
+    </table>
+    <p class="muted">💡 <b>Bài học:</b> Công thức đúng (MSE, Gradient Descent) chưa đủ — <b>siêu tham số (learning rate, số epoch)</b> quyết định mô hình có thực sự tới được nghiệm tối ưu hay không. Normal Equation "ăn gian" bước này bằng cách giải trực tiếp, nhưng chỉ khả thi khi dữ liệu không quá lớn.</p>
+  </section>
+
+  <!-- DEMO TƯƠNG TÁC -->
+  <section>
+    <h2><span class="num">5</span> Demo: Chọn trạng thái, xem đường hồi quy khớp dữ liệu ra sao</h2>
+    <p class="muted">Chọn 1 trong 4 trạng thái ở trên để xem trực quan đường thẳng ŷ = w·x + b và sai số so với 12 căn nhà thật.</p>
+
+    <div class="radio-row">
+      <label><input type="radio" name="scenario" value="baseline" checked> Trạng thái 1: Baseline</label>
+      <label><input type="radio" name="scenario" value="diverge"> Trạng thái 2: LR quá lớn</label>
+      <label><input type="radio" name="scenario" value="underfit"> Trạng thái 3: Dừng quá sớm</label>
+      <label><input type="radio" name="scenario" value="good"> Trạng thái 4: Hội tụ đúng</label>
+    </div>
+
+    <div class="svgwrap" id="svgWrap">
+      <svg id="regSvg" viewBox="0 0 340 300" width="100%" height="300"></svg>
+    </div>
+
+    <div class="metric-row" id="metricRow"></div>
+    <div id="resultBadge"></div>
+  </section>
+
+  <!-- DỮ LIỆU TỐT vs XẤU -->
+  <section>
+    <h2><span class="num">6</span> Dữ liệu tốt vs dữ liệu xấu</h2>
+    <div class="grid2">
+      <div class="data-good">
+        <b>✅ Dữ liệu tốt</b>
+        <ul>
+          <li>Quan hệ giữa x và y thực sự gần <b>tuyến tính</b> — scatter plot cho thấy các điểm nằm gần một đường thẳng</li>
+          <li>Không có <b>outlier cực đoan</b> (VD: 1 căn 40 m² nhưng giá 5000 triệu vì vị trí đặc biệt) làm lệch cả đường hồi quy</li>
+          <li>Feature được <b>chuẩn hoá/scale</b> trước khi dùng Gradient Descent — giúp hội tụ ổn định, không cần learning rate siêu nhỏ</li>
+          <li>Khi có nhiều feature: các feature <b>không tương quan quá mạnh</b> với nhau (tránh multicollinearity khiến w không ổn định)</li>
+        </ul>
+      </div>
+      <div class="data-bad">
+        <b>❌ Dữ liệu xấu</b>
+        <ul>
+          <li><b>Outlier cực đoan</b> kéo lệch cả đường hồi quy, vì OLS tối thiểu hoá <i>bình phương</i> sai số — 1 điểm lệch xa đóng góp sai số rất lớn</li>
+          <li>Quan hệ x, y thực chất <b>phi tuyến</b> (dạng cong) nhưng vẫn ép dùng đường thẳng → residual có pattern rõ ràng, mô hình sai hệ thống</li>
+          <li>Dùng nhiều feature <b>trùng lặp thông tin</b> (VD: vừa "diện tích m²" vừa "diện tích ft²") → multicollinearity, hệ số w không đáng tin cậy</li>
+          <li>Không chuẩn hoá dữ liệu khi Gradient Descent chạy trên nhiều feature có thang đo khác nhau → hội tụ rất chậm hoặc phân kỳ</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- BÀI TẬP + QUIZ -->
+  <section>
+    <h2><span class="num">7</span> Bài tập nhỏ</h2>
+    <p>Giả sử có thêm căn nhà thứ 13, diện tích <b>65 m²</b> nhưng giá lên tới <b>3200 triệu</b> (vì có mặt tiền trung tâm, hoàn toàn khác biệt so với 12 căn còn lại). Theo bạn, nếu đưa điểm dữ liệu này vào tập huấn luyện và chạy lại Normal Equation, đường hồi quy (w, b) sẽ thay đổi theo hướng nào? Gợi ý: hãy nhớ OLS tối thiểu hoá <b>tổng bình phương</b> sai số — một điểm lệch xa sẽ đóng góp sai số bình phương rất lớn vào tổng đó.</p>
+
+    <h2 style="margin-top:26px;"><span class="num">?</span> Quiz tự kiểm tra</h2>
+
+    <div class="quiz-q">
+      <p><b>Câu 1.</b> Tại sao learning rate quá lớn trong Gradient Descent có thể khiến Linear Regression "phân kỳ" (không hội tụ)?</p>
+      <label class="quiz-opt"><input type="radio" name="q1" value="wrong">Vì learning rate lớn giúp mô hình học nhanh hơn nên luôn tốt hơn</label>
+      <label class="quiz-opt"><input type="radio" name="q1" value="right">Vì mỗi bước cập nhật nhảy quá xa điểm cực tiểu, khiến sai số (loss) tăng vọt qua từng vòng lặp thay vì giảm dần</label>
+      <label class="quiz-opt"><input type="radio" name="q1" value="wrong">Vì dữ liệu đầu vào chưa chuẩn hoá nên Gradient Descent luôn phân kỳ bất kể learning rate</label>
+      <div class="feedback" id="fb-q1"></div>
+    </div>
+
+    <div class="quiz-q">
+      <p><b>Câu 2.</b> Baseline "dự đoán bằng giá trung bình" luôn có R² = 0. Điều này có nghĩa gì?</p>
+      <label class="quiz-opt"><input type="radio" name="q2" value="wrong">Mô hình dự đoán sai 100% cho mọi điểm dữ liệu</label>
+      <label class="quiz-opt"><input type="radio" name="q2" value="right">Mô hình không giải thích được phần phương sai nào tốt hơn so với việc chỉ đoán bằng giá trị trung bình — R²=0 là "mức sàn" tối thiểu để so sánh</label>
+      <label class="quiz-opt"><input type="radio" name="q2" value="wrong">R²=0 nghĩa là mô hình bị lỗi cú pháp, không chạy được</label>
+      <div class="feedback" id="fb-q2"></div>
+    </div>
+
+    <div class="quiz-q">
+      <p><b>Câu 3.</b> Vì sao Gradient Descent chỉ chạy 1 epoch (dừng quá sớm) lại cho ra w, b kém hơn nhiều so với Normal Equation, dù cùng công thức cập nhật đúng?</p>
+      <label class="quiz-opt"><input type="radio" name="q3" value="wrong">Vì Normal Equation dùng bộ dữ liệu khác với Gradient Descent</label>
+      <label class="quiz-opt"><input type="radio" name="q3" value="right">Vì Gradient Descent cần đủ số vòng lặp để w, b hội tụ dần về điểm cực tiểu của hàm mất mát — dừng quá sớm nghĩa là thuật toán chưa "đi" đủ xa để tới đó</label>
+      <label class="quiz-opt"><input type="radio" name="q3" value="wrong">Vì Normal Equation luôn tốt hơn Gradient Descent trong mọi trường hợp, không phụ thuộc epoch</label>
+      <div class="feedback" id="fb-q3"></div>
+    </div>
+
+    <button class="btn" onclick="checkQuiz()">✅ Chấm điểm</button>
+    <div id="quizScore"></div>
+  </section>
+
+  <footer>
+    Claude-lession · Bài giảng AI/ML tiếng Việt tự động · Chủ đề tham khảo từ khóa học <i>AI For Beginners</i>.
+  </footer>
+</div>
+
+<script>
+function toggleTheme(){
+  const root = document.documentElement;
+  const cur = root.getAttribute('data-theme');
+  root.setAttribute('data-theme', cur === 'dark' ? 'light' : 'dark');
+  try{ localStorage.setItem('lesson-theme', root.getAttribute('data-theme')); }catch(e){}
+}
+(function initTheme(){
+  try{
+    const saved = localStorage.getItem('lesson-theme');
+    if(saved){ document.documentElement.setAttribute('data-theme', saved); }
+    else if(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches){
+      document.documentElement.setAttribute('data-theme','dark');
+    }
+  }catch(e){}
+})();
+
+function checkWarmup(){
+  let score = 0, total = 4;
+  const box = document.getElementById('warmupScore');
+
+  const w1 = document.querySelector('input[name="w1"]:checked');
+  if(w1 && w1.value === 'right') score++;
+
+  const w2 = (document.getElementById('w2input').value || '').trim().toLowerCase();
+  if(w2.includes('mse') || w2.includes('mean squared error') || w2.includes('binh phuong') || w2.includes('bình phương')) score++;
+
+  const m1 = document.getElementById('m1').value;
+  const m2 = document.getElementById('m2').value;
+  if(m1 === 'diverge') score++;
+  if(m2 === 'underfit') score++;
+
+  box.textContent = `Khởi động xong: ${score}/${total} đúng — ` +
+    (score >= 3 ? '🔥 Trực giác tốt, vào bài chính thôi!' : '👍 Chưa sao, đọc kỹ Trạng thái 1-4 bên dưới nhé.');
+  box.className = 'show';
+}
+
+// Dữ liệu: Diện tích (m²), Giá (trieu VND)
+const AREA = [30,35,40,45,50,55,60,65,70,80,90,100];
+const PRICE = [480,585,635,745,790,890,925,1035,1095,1280,1380,1565];
+const N = AREA.length;
+
+function mean(arr){ return arr.reduce((a,b)=>a+b,0)/arr.length; }
+const meanArea = mean(AREA), meanPrice = mean(PRICE);
+const sst = PRICE.reduce((s,y)=> s + (y-meanPrice)*(y-meanPrice), 0);
+
+function metrics(w, b){
+  let sse = 0;
+  for(let i=0;i<N;i++){
+    const pred = w*AREA[i] + b;
+    sse += (PRICE[i]-pred)*(PRICE[i]-pred);
+  }
+  return { mse: sse/N, r2: 1 - sse/sst, sse };
+}
+
+function gd(lr, epochs){
+  let w = 0, b = 0;
+  for(let e=0; e<epochs; e++){
+    let dw = 0, db = 0;
+    for(let i=0;i<N;i++){
+      const err = (w*AREA[i]+b) - PRICE[i];
+      dw += err*AREA[i]; db += err;
+    }
+    dw = (2/N)*dw; db = (2/N)*db;
+    w -= lr*dw; b -= lr*db;
+  }
+  return {w, b};
+}
+
+const SCENARIOS = {
+  baseline: { label:'Baseline (giá trung bình)', w:0, b:meanPrice, diverge:false },
+  diverge:  { label:'GD learning rate quá lớn', diverge:true },
+  underfit: (()=>{ const r = gd(0.0001, 1); return { label:'GD dừng quá sớm (1 epoch)', w:r.w, b:r.b, diverge:false }; })(),
+  good:     (()=>{ // Normal Equation closed-form
+    let num=0, den=0;
+    for(let i=0;i<N;i++){ num += (AREA[i]-meanArea)*(PRICE[i]-meanPrice); den += (AREA[i]-meanArea)*(AREA[i]-meanArea); }
+    const w = num/den, b = meanPrice - w*meanArea;
+    return { label:'Normal Equation / GD hội tụ', w, b, diverge:false };
+  })()
+};
+
+function pct(v){ return (v*100).toFixed(2) + '%'; }
+
+function toPx(x,y){
+  const W=340,H=300,ml=48,mr=14,mt=14,mb=34;
+  const xmin=20,xmax=110,ymin=300,ymax=1750;
+  const px = ml + (x-xmin)/(xmax-xmin)*(W-ml-mr);
+  const py = (H-mb) - (y-ymin)/(ymax-ymin)*(H-mt-mb);
+  return [px,py];
+}
+
+function svgLine(x1,y1,x2,y2,color,width,dash){
+  return `<line x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}" stroke="${color}" stroke-width="${width}" ${dash?`stroke-dasharray="${dash}"`:''}/>`;
+}
+function svgCircle(x,y,r,color){
+  return `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${r}" fill="${color}"/>`;
+}
+function svgText(x,y,txt,color,size,anchor){
+  return `<text x="${x.toFixed(1)}" y="${y.toFixed(1)}" fill="${color}" font-size="${size||10}" text-anchor="${anchor||'middle'}" font-family="Segoe UI,sans-serif">${txt}</text>`;
+}
+
+function renderChart(scenarioKey){
+  const svg = document.getElementById('regSvg');
+  const cssVar = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+  const accent = cssVar('--accent'), accent2 = cssVar('--accent2'), warn = cssVar('--warn'), bad = cssVar('--bad'), muted = cssVar('--muted'), border = cssVar('--border'), text = cssVar('--text');
+  const sc = SCENARIOS[scenarioKey];
+
+  if(sc.diverge){
+    svg.innerHTML = svgText(170,150,'⚠️ Đường hồi quy bay ra ngoài biểu đồ',bad,14) +
+                     svgText(170,172,'(w ≈ -100.108.683 — mô hình phân kỳ)',bad,12);
+    return;
+  }
+
+  let html = '';
+  // axes
+  const [ax0,ay0] = toPx(20,300), [ax1,ay1] = toPx(110,300);
+  const [ay0x,ay0y] = toPx(20,300), [ay1x,ay1y] = toPx(20,1750);
+  html += svgLine(ax0,ay0,ax1,ay1, border, 1);
+  html += svgLine(ay0x,ay0y,ay1x,ay1y, border, 1);
+  html += svgText((ax0+ax1)/2, 296, 'Diện tích (m²)', muted, 10);
+  html += `<text x="14" y="150" fill="${muted}" font-size="10" text-anchor="middle" transform="rotate(-90 14 150)">Giá (triệu VNĐ)</text>`;
+
+  // regression line across domain
+  const x1 = 20, x2 = 110;
+  const y1 = sc.w*x1 + sc.b, y2 = sc.w*x2 + sc.b;
+  const [lx1,ly1] = toPx(x1, Math.max(300,Math.min(1750,y1)));
+  const [lx2,ly2] = toPx(x2, Math.max(300,Math.min(1750,y2)));
+  html += svgLine(lx1,ly1,lx2,ly2, accent, 2.4);
+
+  // points + residuals
+  for(let i=0;i<N;i++){
+    const [px,py] = toPx(AREA[i], PRICE[i]);
+    const predY = sc.w*AREA[i] + sc.b;
+    const [ppx,ppy] = toPx(AREA[i], Math.max(300,Math.min(1750,predY)));
+    html += svgLine(px,py,ppx,ppy, muted, 1, '2,2');
+    html += svgCircle(px,py,3.4,accent2);
+  }
+  svg.innerHTML = html;
+}
+
+function badgeClass(scenarioKey){
+  if(scenarioKey === 'good') return 'ok-good';
+  if(scenarioKey === 'underfit') return 'ok-ok';
+  return 'ok-bad';
+}
+
+function runDemo(){
+  const scenario = document.querySelector('input[name="scenario"]:checked').value;
+  const sc = SCENARIOS[scenario];
+  const metricRow = document.getElementById('metricRow');
+  const badge = document.getElementById('resultBadge');
+  badge.className = '';
+
+  renderChart(scenario);
+
+  if(sc.diverge){
+    metricRow.innerHTML = `
+      <div class="metric-box"><div class="v" style="color:var(--bad)">phân kỳ</div><div class="k">w (hệ số góc)</div></div>
+      <div class="metric-box"><div class="v" style="color:var(--bad)">phân kỳ</div><div class="k">b (hệ số chặn)</div></div>
+      <div class="metric-box"><div class="v" style="color:var(--bad)">→ ∞</div><div class="k">MSE</div></div>
+      <div class="metric-box"><div class="v" style="color:var(--bad)">≪ 0</div><div class="k">R²</div></div>`;
+    badge.textContent = `❌ ${sc.label}: mô hình phân kỳ, hoàn toàn vô dụng`;
+    badge.classList.add('ok-bad');
+  } else {
+    const m = metrics(sc.w, sc.b);
+    metricRow.innerHTML = `
+      <div class="metric-box"><div class="v">${sc.w.toFixed(2)}</div><div class="k">w (hệ số góc)</div></div>
+      <div class="metric-box"><div class="v">${sc.b.toFixed(2)}</div><div class="k">b (hệ số chặn)</div></div>
+      <div class="metric-box"><div class="v">${m.mse.toFixed(1)}</div><div class="k">MSE</div></div>
+      <div class="metric-box"><div class="v">${m.r2.toFixed(4)}</div><div class="k">R²</div></div>`;
+    const verdict = scenario === 'good' ? '✅ Khớp tốt với dữ liệu' : (scenario === 'underfit' ? '⚠️ Chưa hội tụ, còn xa mức tối ưu' : '❌ Không dùng thông tin Diện tích');
+    badge.textContent = `${sc.label}: R² = ${m.r2.toFixed(4)} — ${verdict}`;
+    badge.classList.add(badgeClass(scenario));
+  }
+  requestAnimationFrame(()=> badge.classList.add('show'));
+}
+
+document.querySelectorAll('input[name="scenario"]').forEach(r => r.addEventListener('change', runDemo));
+runDemo();
+
+const ANSWERS = { q1:'right', q2:'right', q3:'right' };
+function checkQuiz(){
+  let score = 0;
+  const total = Object.keys(ANSWERS).length;
+  for(const q in ANSWERS){
+    const checked = document.querySelector(`input[name="${q}"]:checked`);
+    const fb = document.getElementById('fb-'+q);
+    if(checked && checked.value === ANSWERS[q]){
+      score++;
+      fb.textContent = '✅ Chính xác!';
+      fb.className = 'feedback show correct';
+    } else {
+      fb.textContent = checked ? '❌ Chưa đúng — đọc lại phần Trạng thái ở trên nhé.' : '⚠️ Bạn chưa chọn đáp án.';
+      fb.className = 'feedback show wrong';
+    }
+  }
+  const box = document.getElementById('quizScore');
+  box.textContent = `Kết quả: ${score}/${total} câu đúng — ` +
+    (score === total ? '🏆 Xuất sắc!' : score >= total/2 ? '👍 Khá tốt, xem lại câu sai nhé.' : '📖 Nên đọc lại bài trước khi làm tiếp.');
+  box.className = 'show';
+}
+</script>
+</body>
+</html>

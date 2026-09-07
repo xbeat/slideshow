@@ -1,0 +1,683 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PCA: Nén Dữ Liệu Mà Không Mất Thông Tin — Học AI/ML dễ hiểu</title>
+<style>
+  :root{
+    --bg:#f6f7fb; --bg2:#ffffff; --text:#1c1f2b; --muted:#5b6072;
+    --accent:#5b5ff0; --accent2:#00b894; --warn:#f0a500; --bad:#e0455a;
+    --border:#e3e5ef; --card:#ffffff; --code-bg:#1c1f2b; --code-text:#e8eaf6;
+    --shadow: 0 8px 24px rgba(30,32,60,0.08);
+  }
+  [data-theme="dark"]{
+    --bg:#12131c; --bg2:#181a26; --text:#eceefb; --muted:#a2a6c2;
+    --accent:#8b8ffb; --accent2:#3ddc97; --warn:#ffc233; --bad:#ff6b7d;
+    --border:#2a2d40; --card:#1c1e2c; --code-bg:#0d0e16; --code-text:#dfe2f7;
+    --shadow: 0 8px 28px rgba(0,0,0,0.45);
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; font-family:"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+    background:var(--bg); color:var(--text); transition:background .4s ease,color .4s ease;
+    line-height:1.6;
+  }
+  .wrap{max-width:960px; margin:0 auto; padding:20px 16px 80px;}
+  header.hero{
+    text-align:center; padding:36px 20px; border-radius:20px;
+    background:linear-gradient(135deg,var(--accent),#9b8cff);
+    color:#fff; box-shadow:var(--shadow);
+    animation: fadeInDown .7s ease both;
+    position:relative;
+  }
+  header.hero h1{margin:0 0 8px; font-size:clamp(22px,4vw,34px);}
+  header.hero p{margin:0; opacity:.92; font-size:15px;}
+  .topbar{display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:14px;}
+  .badge{
+    display:inline-block; background:rgba(255,255,255,.18); padding:4px 12px;
+    border-radius:999px; font-size:12px; letter-spacing:.5px; margin-bottom:10px;
+  }
+  button.toggle{
+    background:var(--card); color:var(--text); border:1px solid var(--border);
+    padding:8px 14px; border-radius:999px; cursor:pointer; font-size:13px;
+    box-shadow:var(--shadow); transition:transform .25s ease, background .3s ease;
+  }
+  button.toggle:hover{transform:translateY(-2px);}
+  section{
+    background:var(--card); border:1px solid var(--border); border-radius:16px;
+    padding:22px 20px; margin-top:22px; box-shadow:var(--shadow);
+    animation: slideUp .6s ease both;
+  }
+  section h2{margin-top:0; font-size:20px; display:flex; align-items:center; gap:8px;}
+  section h2 .num{
+    background:var(--accent); color:#fff; width:28px; height:28px; border-radius:50%;
+    display:inline-flex; align-items:center; justify-content:center; font-size:14px; flex:none;
+  }
+  p{color:var(--text);}
+  .muted{color:var(--muted);}
+  code, pre{font-family:"Fira Code",Consolas,monospace;}
+  pre{
+    background:var(--code-bg); color:var(--code-text); padding:14px 16px; border-radius:12px;
+    overflow-x:auto; font-size:13px; line-height:1.55;
+  }
+  code.inline{background:var(--code-bg); color:var(--code-text); padding:2px 6px; border-radius:6px; font-size:.9em;}
+  table{width:100%; border-collapse:collapse; margin:12px 0; font-size:14px; overflow-x:auto; display:block;}
+  table thead, table tbody{width:100%;}
+  th,td{border:1px solid var(--border); padding:8px 10px; text-align:left; vertical-align:top;}
+  th{background:var(--bg); color:var(--muted); font-weight:600;}
+  .grade-good{color:var(--accent2); font-weight:700;}
+  .grade-ok{color:var(--warn); font-weight:700;}
+  .grade-bad{color:var(--bad); font-weight:700;}
+  .state-card{
+    border:1px dashed var(--border); border-radius:14px; padding:16px; margin:14px 0;
+    background:var(--bg); animation: slideUp .5s ease both;
+  }
+  .state-card h3{margin:0 0 6px; font-size:16px; display:flex; align-items:center; gap:8px; flex-wrap:wrap;}
+  .pill{font-size:11px; padding:3px 10px; border-radius:999px; font-weight:700;}
+  .pill.good{background:rgba(0,184,148,.15); color:var(--accent2);}
+  .pill.ok{background:rgba(240,165,0,.15); color:var(--warn);}
+  .pill.bad{background:rgba(224,69,90,.15); color:var(--bad);}
+  .ascii{
+    background:var(--code-bg); color:var(--code-text); padding:14px; border-radius:12px;
+    font-family:"Fira Code",Consolas,monospace; font-size:12.5px; white-space:pre; overflow-x:auto;
+  }
+  .grid2{display:grid; grid-template-columns:1fr; gap:14px;}
+  @media(min-width:720px){.grid2{grid-template-columns:1fr 1fr;}}
+  .metric-row{display:flex; flex-wrap:wrap; gap:10px; margin:12px 0;}
+  .metric-box{
+    flex:1; min-width:120px; padding:10px 12px; border-radius:10px; background:var(--bg2);
+    border:1px solid var(--border); text-align:center;
+  }
+  .metric-box .v{font-size:20px; font-weight:800;}
+  .metric-box .k{font-size:11.5px; color:var(--muted);}
+  .radio-row{display:flex; gap:14px; flex-wrap:wrap; margin:10px 0;}
+  .radio-row label{display:flex; align-items:center; gap:6px; font-size:13.5px; cursor:pointer;
+    padding:7px 12px; border:1px solid var(--border); border-radius:10px; background:var(--bg2);
+    transition:background .25s ease;}
+  .radio-row label:hover{background:var(--bg);}
+  .radio-row input{accent-color:var(--accent);}
+  .btn{
+    background:var(--accent); color:#fff; border:none; padding:11px 20px; border-radius:10px;
+    font-size:14px; cursor:pointer; font-weight:600; transition:transform .25s ease, box-shadow .25s ease;
+  }
+  .btn:hover{transform:translateY(-2px); box-shadow:0 6px 16px rgba(91,95,240,.35);}
+  .btn.secondary{background:var(--accent2);}
+  .pulse{animation: pulse 1s ease infinite;}
+  #resultBadge{
+    display:inline-block; margin-top:14px; padding:10px 18px; border-radius:12px; font-weight:700;
+    opacity:0;
+  }
+  #resultBadge.show{animation: slideDown .5s ease forwards;}
+  .ok-good{background:rgba(0,184,148,.15); color:var(--accent2);}
+  .ok-bad{background:rgba(224,69,90,.15); color:var(--bad);}
+  .ok-ok{background:rgba(240,165,0,.15); color:var(--warn);}
+  .quiz-q{margin-bottom:18px; padding-bottom:14px; border-bottom:1px dashed var(--border);}
+  .quiz-q:last-child{border-bottom:none;}
+  .quiz-opt{
+    display:flex; align-items:center; gap:8px; padding:8px 10px; border-radius:10px; margin:4px 0;
+    cursor:pointer; border:1px solid transparent; transition:background .25s ease;
+  }
+  .quiz-opt:hover{background:var(--bg);}
+  .quiz-opt input{accent-color:var(--accent);}
+  .feedback{
+    margin-top:8px; padding:8px 12px; border-radius:8px; font-size:13.5px; display:none;
+  }
+  .feedback.show{display:block; animation: slideDown .4s ease both;}
+  .feedback.correct{background:rgba(0,184,148,.15); color:var(--accent2);}
+  .feedback.wrong{background:rgba(224,69,90,.15); color:var(--bad);}
+  #quizScore, #warmupScore{
+    margin-top:10px; font-weight:700; opacity:0;
+  }
+  #quizScore.show, #warmupScore.show{animation: fadeInDown .5s ease forwards;}
+  .data-good, .data-bad{padding:12px 14px; border-radius:12px; font-size:13.5px;}
+  .data-good{background:rgba(0,184,148,.08); border:1px solid rgba(0,184,148,.35);}
+  .data-bad{background:rgba(224,69,90,.08); border:1px solid rgba(224,69,90,.35);}
+  .warmup-box{
+    border:1px dashed var(--border); border-radius:14px; padding:14px 16px; margin:12px 0;
+    background:var(--bg);
+  }
+  .warmup-box h4{margin:0 0 8px; font-size:14.5px;}
+  .fillblank{
+    padding:9px 12px; border-radius:10px; border:1px solid var(--border);
+    background:var(--bg2); color:var(--text); font-size:14px; width:220px; max-width:100%;
+  }
+  select.matchsel{
+    padding:8px 10px; border-radius:8px; border:1px solid var(--border);
+    background:var(--bg2); color:var(--text); font-size:13.5px;
+  }
+  .match-row{display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin:6px 0;}
+  .svgwrap{
+    background:var(--bg2); border:1px solid var(--border); border-radius:14px; padding:8px;
+    max-width:340px; margin:14px auto;
+  }
+  .loadbar-row{display:flex; align-items:center; gap:10px; margin:10px 0; font-size:13px;}
+  .loadbar-row .lbl{width:150px; flex:none; color:var(--muted);}
+  .loadbar-track{flex:1; height:20px; background:var(--bg); border:1px solid var(--border); border-radius:8px; overflow:hidden; position:relative;}
+  .loadbar-fill{height:100%; width:0%; border-radius:8px; transition:width .6s ease;}
+  .loadbar-fill.age{background:var(--accent);}
+  .loadbar-fill.income{background:var(--bad);}
+  .loadbar-val{width:110px; flex:none; text-align:right; font-family:"Fira Code",Consolas,monospace; font-size:12px;}
+  footer{text-align:center; margin-top:30px; font-size:12.5px; color:var(--muted);}
+
+  @keyframes fadeInDown{
+    from{opacity:0; transform:translateY(-16px);}
+    to{opacity:1; transform:translateY(0);}
+  }
+  @keyframes slideUp{
+    from{opacity:0; transform:translateY(18px);}
+    to{opacity:1; transform:translateY(0);}
+  }
+  @keyframes slideDown{
+    from{opacity:0; transform:translateY(-8px);}
+    to{opacity:1; transform:translateY(0);}
+  }
+  @keyframes pulse{
+    0%,100%{transform:scale(1);}
+    50%{transform:scale(1.05);}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="topbar">
+    <span class="muted" style="font-size:13px;">Claude-lession · AI/ML Tiếng Việt</span>
+    <button class="toggle" onclick="toggleTheme()">🌙 / ☀️ Đổi giao diện</button>
+  </div>
+
+  <header class="hero">
+    <span class="badge">DIMENSIONALITY REDUCTION — PRINCIPAL COMPONENT ANALYSIS</span>
+    <h1>📦 PCA: Nén 2 Chiều Thành 1 Mà Không Mất Bao Nhiêu Thông Tin</h1>
+    <p>Một ngân hàng có hồ sơ <b>Tuổi</b> và <b>Thu nhập</b> của khách hàng — hai con số nhưng lại kể gần như <i>cùng một câu chuyện</i> (càng lớn tuổi, thu nhập càng cao). PCA tìm ra "trục tổng hợp" đó để nén dữ liệu mà gần như không mất thông tin — nhưng chọn sai một bước (quên chuẩn hoá, chọn nhầm trục...) là kết quả sai lệch hoàn toàn. Có demo trực quan trục PC1/PC2 + quiz tự chấm.</p>
+  </header>
+
+  <!-- KHỞI ĐỘNG NHANH -->
+  <section>
+    <h2><span class="num">0</span> Khởi động nhanh (60 giây)</h2>
+    <p class="muted">Trả lời nhanh 3 câu dưới đây trước khi học — không cần đúng hết, chỉ để "hâm nóng" não bạn.</p>
+
+    <div class="warmup-box">
+      <h4>1️⃣ Trắc nghiệm nhanh</h4>
+      <p>Nếu 2 đặc trưng (feature) tương quan gần như tuyệt đối (VD: hệ số tương quan ≈ 0.98), PCA có thể nén chúng thành bao nhiêu chiều mà gần như không mất thông tin?</p>
+      <label class="quiz-opt"><input type="radio" name="w1" value="wrong">Phải giữ nguyên cả 2 chiều, PCA không giúp được gì</label>
+      <label class="quiz-opt"><input type="radio" name="w1" value="right">Có thể nén còn 1 chiều, mất rất ít thông tin</label>
+      <label class="quiz-opt"><input type="radio" name="w1" value="wrong">Không thể áp dụng PCA khi 2 đặc trưng tương quan cao</label>
+    </div>
+
+    <div class="warmup-box">
+      <h4>2️⃣ Điền khuyết</h4>
+      <p>Trục mà khi chiếu (project) dữ liệu lên có <b>phương sai (variance) lớn nhất</b> được gọi là thành phần chính thứ nhất, viết tắt <b>______</b>.</p>
+      <input class="fillblank" type="text" id="w2input" placeholder="Nhập từ khoá...">
+    </div>
+
+    <div class="warmup-box">
+      <h4>3️⃣ Đối chiếu với bản mẫu</h4>
+      <p>Ghép mỗi tình huống với hậu quả tương ứng:</p>
+      <div class="match-row">Không chuẩn hoá dữ liệu trước khi chạy PCA →
+        <select class="matchsel" id="m1">
+          <option value="">-- chọn --</option>
+          <option value="scale">PC1 bị chi phối bởi feature có đơn vị/thang đo lớn hơn, không phản ánh đúng tương quan thật</option>
+          <option value="nocompress">Tái tạo hoàn hảo nhưng không nén được chiều nào cả</option>
+        </select>
+      </div>
+      <div class="match-row">Giữ n_components = n_features (giữ hết mọi trục) →
+        <select class="matchsel" id="m2">
+          <option value="">-- chọn --</option>
+          <option value="scale">PC1 bị chi phối bởi feature có đơn vị/thang đo lớn hơn, không phản ánh đúng tương quan thật</option>
+          <option value="nocompress">Tái tạo hoàn hảo nhưng không nén được chiều nào cả</option>
+        </select>
+      </div>
+    </div>
+
+    <button class="btn" onclick="checkWarmup()">✅ Kiểm tra khởi động</button>
+    <div id="warmupScore"></div>
+  </section>
+
+  <!-- 1. ĐỊNH NGHĨA -->
+  <section>
+    <h2><span class="num">1</span> Định nghĩa ngắn gọn</h2>
+    <p><b>PCA (Principal Component Analysis)</b> là kỹ thuật <b>giảm chiều dữ liệu (dimensionality reduction)</b>: tìm các trục mới (gọi là <i>thành phần chính</i> — principal component) sao cho khi chiếu dữ liệu lên các trục đó, ta <b>giữ lại nhiều phương sai (thông tin) nhất</b> với <b>ít chiều nhất</b>. Các trục này luôn <b>trực giao (vuông góc)</b> với nhau và được sắp xếp giảm dần theo phương sai: PC1 giữ nhiều thông tin nhất, PC2 giữ phần còn lại nhiều nhất, v.v.</p>
+    <div class="ascii">  Dữ liệu gốc (n chiều) ─▶ Chuẩn hoá (mean=0, std=1) ─▶ Ma trận hiệp phương sai (Covariance Matrix)
+                                                                │
+                                          Eigen-decomposition (trị riêng λ, vector riêng v)
+                                                                │
+                    Sắp xếp λ giảm dần: λ1 ≥ λ2 ≥ ... ≥ λn ──▶ PC1, PC2, ..., PCn (trục mới, trực giao)
+                                                                │
+                    Giữ k thành phần đầu (k &lt; n) ──▶ Chiếu dữ liệu lên k trục ──▶ Dữ liệu k chiều (đã nén)
+                                                                │
+                    % phương sai giữ lại = (λ1+...+λk) / (λ1+...+λn)   ← "còn giữ được bao nhiêu thông tin"</div>
+    <p class="muted">Chọn <b>sai trục</b> hoặc <b>quên chuẩn hoá</b> dữ liệu trước khi tính hiệp phương sai sẽ khiến PC1 không còn đại diện đúng cho hướng biến thiên quan trọng nhất — đây chính là thứ ta sẽ "vặn tay" trong phần Demo bên dưới.</p>
+  </section>
+
+  <!-- 2. BÀI TOÁN THỰC TẾ -->
+  <section>
+    <h2><span class="num">2</span> Bài toán thực tế: Hồ sơ khách hàng vay ngân hàng 🏦</h2>
+    <p>Ngân hàng có hồ sơ <b>12 khách hàng</b> với 2 đặc trưng: <b>Tuổi</b> và <b>Thu nhập</b> (triệu VNĐ/tháng). Hai đặc trưng này <b>tương quan rất mạnh</b> (hệ số tương quan ≈ <b>0.98</b>) — khách càng lớn tuổi thường càng có thu nhập cao (nhiều năm kinh nghiệm hơn). PCA giúp nén 2 cột này thành 1 "chỉ số tổng hợp" mà gần như không mất thông tin.</p>
+    <table>
+      <thead><tr><th>Khách hàng</th><th>Tuổi</th><th>Thu nhập (triệu VNĐ/tháng)</th></tr></thead>
+      <tbody>
+        <tr><td>KH1–KH3</td><td>23, 25, 27</td><td>9, 11, 10</td></tr>
+        <tr><td>KH4–KH6</td><td>29, 31, 33</td><td>14, 16, 15</td></tr>
+        <tr><td>KH7–KH9</td><td>35, 38, 41</td><td>20, 24, 27</td></tr>
+        <tr><td>KH10–KH12</td><td>44, 48, 52</td><td>30, 38, 45</td></tr>
+      </tbody>
+    </table>
+    <p class="muted">Trung bình: Tuổi ≈ 35.5, Thu nhập ≈ 21.6 triệu. Độ lệch chuẩn: Tuổi ≈ 8.87, Thu nhập ≈ 11.04. Vì hai đơn vị (năm vs triệu đồng) khác thang đo, ta phải <b>chuẩn hoá (standardize)</b> trước khi tính PCA — nếu không, kết quả sẽ méo mó (xem Trạng thái 1 bên dưới).</p>
+  </section>
+
+  <!-- 3. 4 TRẠNG THÁI -->
+  <section>
+    <h2><span class="num">3</span> 4 trạng thái khi chạy PCA trên cùng bộ dữ liệu</h2>
+    <p class="muted">Cùng 12 khách hàng trên, chỉ đổi cách chuẩn bị dữ liệu và số trục giữ lại — xem "% phương sai giữ lại" có đang đánh lừa ta không:</p>
+
+    <!-- State 1 -->
+    <div class="state-card">
+      <h3>❌ Trạng thái 1 — Không chuẩn hoá (Tuổi tính bằng năm, Thu nhập tính bằng đồng) <span class="pill bad">❌ Xấu</span></h3>
+      <div class="ascii">  Thu nhập tính bằng ĐỒNG: 9.000.000 - 45.000.000   |   Tuổi tính bằng NĂM: 23 - 52
+  Phương sai của Thu nhập (đơn vị đồng) LỚN HƠN phương sai của Tuổi hàng chục triệu lần
+
+  PC1 ≈ (0.0000008 × Tuổi) + (1.0 × Thu nhập)   ← gần như THUẦN TUÝ là trục Thu nhập
+  Explained variance ratio PC1 ≈ 99.999999999998%   ← trông "hoàn hảo" nhưng là ẢO GIÁC do đơn vị</div>
+      <pre>from sklearn.decomposition import PCA
+X = df[['tuoi', 'thu_nhap_dong']].values   # quên StandardScaler!
+pca = PCA().fit(X)
+pca.explained_variance_ratio_   # [0.999999999998, 0.000000000002] — PC1 "ăn" gần hết
+pca.components_[0]              # [0.0000008, 1.0] — chỉ phản ánh trục Thu nhập</pre>
+      <p class="muted">Đây là <b>"cái bẫy đơn vị đo" (scale trap)</b>: giống hệt Accuracy Paradox ở Confusion Matrix — một con số "đẹp" (99.999%) nhưng không phản ánh đúng bản chất, chỉ vì Thu nhập có thang đo (đồng) lớn hơn Tuổi (năm) hàng triệu lần.</p>
+    </div>
+
+    <!-- State 2 -->
+    <div class="state-card">
+      <h3>❌ Trạng thái 2 — Đã chuẩn hoá, nhưng giữ NHẦM trục (PC2 thay vì PC1) <span class="pill bad">❌ Xấu</span></h3>
+      <div class="ascii">  Sau chuẩn hoá: PC1 giữ 99.22% phương sai, PC2 chỉ giữ 0.78% phương sai
+  Nếu vô tình giữ PC2 (trục phụ, phương sai thấp) thay vì PC1:
+
+  Variance kept = 0.78%   Reconstruction error = 99.22%   ← gần như MẤT SẠCH thông tin
+  Dữ liệu tái tạo lại hoàn toàn không giống dữ liệu gốc, dù vẫn "chỉ giữ 1 chiều" y hệt cấu hình tốt</div>
+      <pre>pca = PCA(n_components=2).fit(X_scaled)
+# BUG: lấy nhầm cột thứ 2 (PC2) thay vì cột đầu (PC1)
+X_reduced = pca.transform(X_scaled)[:, 1:2]   # sai! phải là [:, 0:1]
+pca.explained_variance_ratio_[1]   # 0.0078 — chỉ giữ được 0.78% thông tin</pre>
+      <p class="muted">"Giữ 1 chiều" không tự động đúng — phải là <b>đúng 1 chiều quan trọng nhất (PC1)</b>. Đây là lỗi lập trình rất dễ mắc (đảo thứ tự cột) nhưng hậu quả cực nặng.</p>
+    </div>
+
+    <!-- State 3 -->
+    <div class="state-card">
+      <h3>⚠️ Trạng thái 3 — Đã chuẩn hoá, giữ CẢ 2 trục (không giảm chiều gì cả) <span class="pill ok">⚠️ Trung bình</span></h3>
+      <div class="ascii">  n_components = 2 (bằng đúng số chiều gốc)
+
+  Variance kept = 100%   Reconstruction error = 0%   ← tái tạo HOÀN HẢO
+  Nhưng dữ liệu đầu ra vẫn là... 2 chiều, y hệt đầu vào!</div>
+      <pre>pca = PCA(n_components=2).fit(X_scaled)   # bằng số feature gốc → không nén gì cả
+X_reduced = pca.transform(X_scaled)       # vẫn (12, 2) — chưa giảm chiều nào
+pca.explained_variance_ratio_.sum()       # 1.0 — "hoàn hảo" nhưng vô nghĩa nếu mục tiêu là nén</pre>
+      <p class="muted">Về mặt kỹ thuật đây không phải "lỗi" — PCA chỉ <i>xoay trục toạ độ</i>, không mất thông tin nào. Nhưng nếu mục tiêu là giảm chiều (nén dữ liệu, trực quan hoá, giảm nhiễu), giữ hết mọi trục thì <b>mất hết lợi ích thực sự của PCA</b>.</p>
+    </div>
+
+    <!-- State 4 -->
+    <div class="state-card">
+      <h3>✅ Trạng thái 4 — Đã chuẩn hoá, giữ ĐÚNG PC1 (trục phương sai lớn nhất) <span class="pill good">✅ Tốt</span></h3>
+      <div class="ascii">  n_components = 1, đúng trục PC1
+
+  Variance kept = 99.22%   Reconstruction error = 0.78%   ← nén 2 chiều còn 1 mà gần như không mất gì
+  PC1 ≈ 0.707 × Tuổi(chuẩn hoá) + 0.707 × Thu nhập(chuẩn hoá)  → "chỉ số tổng hợp Tuổi–Thu nhập"</div>
+      <pre>from sklearn.preprocessing import StandardScaler
+X_scaled = StandardScaler().fit_transform(df[['tuoi','thu_nhap']])
+pca = PCA(n_components=1).fit(X_scaled)
+pca.explained_variance_ratio_   # [0.9922] — giữ 99.22% thông tin chỉ với 1 con số duy nhất</pre>
+      <p class="muted">Đây mới là PCA "đúng chuẩn": chuẩn hoá trước, giữ đúng thứ tự trục theo phương sai giảm dần, và chọn k đủ nhỏ để nén nhưng đủ lớn để giữ phần lớn thông tin (thường ngưỡng 90–95%).</p>
+    </div>
+  </section>
+
+  <!-- BẢNG SO SÁNH -->
+  <section>
+    <h2><span class="num">4</span> Bảng so sánh tổng hợp</h2>
+    <table>
+      <thead><tr><th>Trạng Thái</th><th>Input</th><th>Xử Lý</th><th>Output</th><th>Đánh Giá</th></tr></thead>
+      <tbody>
+        <tr><td>Không chuẩn hoá</td><td>Tuổi (năm), Thu nhập (đồng)</td><td>PCA trên đơn vị gốc</td><td>PC1≈100% nhưng chỉ là trục Thu nhập</td><td class="grade-bad">❌ Ảo giác do scale</td></tr>
+        <tr><td>Giữ nhầm trục</td><td>Đã chuẩn hoá</td><td>Giữ PC2 thay vì PC1</td><td>Variance kept=0.78%</td><td class="grade-bad">❌ Mất gần hết thông tin</td></tr>
+        <tr><td>Giữ hết mọi trục</td><td>Đã chuẩn hoá</td><td>n_components = n_features</td><td>Variance kept=100%, không nén</td><td class="grade-ok">⚠️ Đúng nhưng vô nghĩa nếu cần nén</td></tr>
+        <tr><td>Giữ đúng PC1</td><td>Đã chuẩn hoá</td><td>n_components=1, đúng thứ tự</td><td>Variance kept=99.22%</td><td class="grade-good">✅ Nén tốt, mất rất ít thông tin</td></tr>
+      </tbody>
+    </table>
+    <p class="muted">💡 <b>Bài học:</b> "% phương sai giữ lại cao" chỉ có ý nghĩa khi (1) dữ liệu đã được <b>chuẩn hoá đúng cách</b> và (2) bạn <b>giữ đúng những trục có phương sai lớn nhất</b> theo thứ tự. Thiếu 1 trong 2 điều kiện, con số đẹp vẫn có thể là ảo giác.</p>
+  </section>
+
+  <!-- DEMO TƯƠNG TÁC -->
+  <section>
+    <h2><span class="num">5</span> Demo: Chọn cấu hình, xem trục PC1/PC2 và sai số tái tạo</h2>
+    <p class="muted">Chọn 1 trong 4 cấu hình (khớp với 4 trạng thái ở trên) để xem trực quan hoá trục chính và mức độ mất thông tin khi nén dữ liệu 12 khách hàng.</p>
+
+    <div class="radio-row">
+      <label><input type="radio" name="scenario" value="raw" checked> Trạng thái 1: Không chuẩn hoá</label>
+      <label><input type="radio" name="scenario" value="pc2"> Trạng thái 2: Giữ nhầm PC2</label>
+      <label><input type="radio" name="scenario" value="both"> Trạng thái 3: Giữ cả 2 trục</label>
+      <label><input type="radio" name="scenario" value="pc1"> Trạng thái 4: Giữ đúng PC1</label>
+    </div>
+
+    <div id="loadbarBox" style="display:none;">
+      <div class="loadbar-row">
+        <span class="lbl">Loading trên trục Tuổi</span>
+        <div class="loadbar-track"><div class="loadbar-fill age" id="lbAge"></div></div>
+        <span class="loadbar-val" id="lbAgeVal">0%</span>
+      </div>
+      <div class="loadbar-row">
+        <span class="lbl">Loading trên trục Thu nhập</span>
+        <div class="loadbar-track"><div class="loadbar-fill income" id="lbIncome"></div></div>
+        <span class="loadbar-val" id="lbIncomeVal">0%</span>
+      </div>
+    </div>
+
+    <div class="svgwrap" id="svgWrap" style="display:none;">
+      <svg id="pcaSvg" viewBox="0 0 320 320" width="100%" height="320"></svg>
+    </div>
+
+    <div class="metric-row" id="metricRow"></div>
+    <div id="resultBadge"></div>
+  </section>
+
+  <!-- DỮ LIỆU TỐT vs XẤU -->
+  <section>
+    <h2><span class="num">6</span> Dữ liệu tốt vs dữ liệu xấu</h2>
+    <div class="grid2">
+      <div class="data-good">
+        <b>✅ Dữ liệu tốt</b>
+        <ul>
+          <li>Tất cả feature được <b>chuẩn hoá (StandardScaler)</b> trước khi đưa vào PCA, bất kể đơn vị gốc là gì</li>
+          <li>Kiểm tra <code class="inline">explained_variance_ratio_</code> đã <b>sắp xếp giảm dần</b> và giữ đúng thứ tự cột khi chọn <code class="inline">n_components</code></li>
+          <li>Số chiều giữ lại (k) được chọn dựa trên ngưỡng phương sai tích luỹ hợp lý (VD: ≥ 90–95%), không phải "cho vui"</li>
+          <li>VD: 12 khách hàng, chuẩn hoá đầy đủ, k=1 giữ 99.22% phương sai — có cơ sở rõ ràng để giảm chiều</li>
+        </ul>
+      </div>
+      <div class="data-bad">
+        <b>❌ Dữ liệu xấu</b>
+        <ul>
+          <li>Trộn lẫn đơn vị đo (đồng, năm, %, mét...) mà không chuẩn hoá — PCA sẽ bị chi phối bởi feature có thang đo lớn nhất</li>
+          <li>Chọn <code class="inline">n_components</code> theo cảm tính (VD: "giữ 2 cho dễ vẽ") mà không xem % phương sai giữ lại</li>
+          <li>Lấy nhầm cột khi transform (đảo thứ tự PC1/PC2), nhất là khi thao tác thủ công với ma trận</li>
+          <li>Diễn giải trục PCA như thể nó luôn có ý nghĩa nghiệp vụ rõ ràng, dù đôi khi PC1 chỉ là tổ hợp khó giải thích của nhiều feature</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- BÀI TẬP + QUIZ -->
+  <section>
+    <h2><span class="num">7</span> Bài tập nhỏ</h2>
+    <p>Giả sử ngân hàng thêm feature thứ 3: <b>"Số năm kinh nghiệm làm việc"</b>, gần như luôn bằng <code class="inline">Tuổi − 22</code> (gần như tương quan tuyệt đối với Tuổi). Theo bạn, khi chạy PCA (đã chuẩn hoá) trên cả 3 feature (Tuổi, Thu nhập, Số năm kinh nghiệm), <b>explained variance ratio của PC1 sẽ tăng hay giảm</b> so với chỉ dùng 2 feature (Tuổi, Thu nhập)? Gợi ý: hãy thử nghĩ xem thêm một feature gần như "trùng lặp thông tin" với feature đã có sẽ ảnh hưởng thế nào đến hướng phương sai lớn nhất.</p>
+
+    <h2 style="margin-top:26px;"><span class="num">?</span> Quiz tự kiểm tra</h2>
+
+    <div class="quiz-q">
+      <p><b>Câu 1.</b> Vì sao không chuẩn hoá dữ liệu trước khi chạy PCA có thể dẫn đến kết quả sai lệch?</p>
+      <label class="quiz-opt"><input type="radio" name="q1" value="wrong">Vì PCA chỉ hoạt động được với dữ liệu đã chuẩn hoá về mặt toán học, nếu không sẽ báo lỗi</label>
+      <label class="quiz-opt"><input type="radio" name="q1" value="right">Vì feature có đơn vị/thang đo lớn hơn sẽ có phương sai lớn hơn, khiến PC1 bị "kéo" theo trục đó dù không phản ánh đúng tương quan thật giữa các feature</label>
+      <label class="quiz-opt"><input type="radio" name="q1" value="wrong">Vì PCA chỉ áp dụng được cho dữ liệu phân loại (categorical), không áp dụng cho số liên tục</label>
+      <div class="feedback" id="fb-q1"></div>
+    </div>
+
+    <div class="quiz-q">
+      <p><b>Câu 2.</b> PC1 giữ 99.22% phương sai, PC2 chỉ giữ 0.78%. Nếu vô tình chỉ giữ lại PC2 (bỏ PC1), điều gì xảy ra?</p>
+      <label class="quiz-opt"><input type="radio" name="q2" value="wrong">Không sao cả, vì PCA đảm bảo mọi trục đều giữ lượng thông tin như nhau</label>
+      <label class="quiz-opt"><input type="radio" name="q2" value="right">Mất gần hết thông tin (~99.22%), vì đã bỏ đúng trục quan trọng nhất và giữ lại trục gần như không mang thông tin</label>
+      <label class="quiz-opt"><input type="radio" name="q2" value="wrong">Dữ liệu sẽ tự động được PCA sắp xếp lại đúng thứ tự nên không ảnh hưởng gì</label>
+      <div class="feedback" id="fb-q2"></div>
+    </div>
+
+    <div class="quiz-q">
+      <p><b>Câu 3.</b> Chạy PCA với <code class="inline">n_components</code> bằng đúng số feature gốc (giữ hết mọi trục) có ý nghĩa gì?</p>
+      <label class="quiz-opt"><input type="radio" name="q3" value="wrong">Đây là cách nén dữ liệu hiệu quả nhất vì giữ 100% phương sai</label>
+      <label class="quiz-opt"><input type="radio" name="q3" value="right">Tái tạo dữ liệu hoàn hảo (error=0%) nhưng không giảm được chiều dữ liệu nào — PCA lúc này chỉ xoay trục toạ độ, không mang lại lợi ích nén dữ liệu</label>
+      <label class="quiz-opt"><input type="radio" name="q3" value="wrong">Sẽ gây lỗi vì PCA yêu cầu số trục giữ lại luôn phải nhỏ hơn số feature gốc</label>
+      <div class="feedback" id="fb-q3"></div>
+    </div>
+
+    <button class="btn" onclick="checkQuiz()">✅ Chấm điểm</button>
+    <div id="quizScore"></div>
+  </section>
+
+  <footer>
+    Claude-lession · Bài giảng AI/ML tiếng Việt tự động · Chủ đề tham khảo từ khóa học <i>AI For Beginners</i>.
+  </footer>
+</div>
+
+<script>
+function toggleTheme(){
+  const root = document.documentElement;
+  const cur = root.getAttribute('data-theme');
+  root.setAttribute('data-theme', cur === 'dark' ? 'light' : 'dark');
+  try{ localStorage.setItem('lesson-theme', root.getAttribute('data-theme')); }catch(e){}
+}
+(function initTheme(){
+  try{
+    const saved = localStorage.getItem('lesson-theme');
+    if(saved){ document.documentElement.setAttribute('data-theme', saved); }
+    else if(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches){
+      document.documentElement.setAttribute('data-theme','dark');
+    }
+  }catch(e){}
+})();
+
+function checkWarmup(){
+  let score = 0, total = 4;
+  const box = document.getElementById('warmupScore');
+
+  const w1 = document.querySelector('input[name="w1"]:checked');
+  if(w1 && w1.value === 'right') score++;
+
+  const w2 = (document.getElementById('w2input').value || '').trim().toLowerCase();
+  if(w2.includes('pc1') || w2.includes('thanh phan chinh') || w2.includes('thành phần chính') || w2.includes('principal component')) score++;
+
+  const m1 = document.getElementById('m1').value;
+  const m2 = document.getElementById('m2').value;
+  if(m1 === 'scale') score++;
+  if(m2 === 'nocompress') score++;
+
+  box.textContent = `Khởi động xong: ${score}/${total} đúng — ` +
+    (score >= 3 ? '🔥 Trực giác tốt, vào bài chính thôi!' : '👍 Chưa sao, đọc kỹ Trạng thái 1-4 bên dưới nhé.');
+  box.className = 'show';
+}
+
+// Dữ liệu: Tuổi (năm), Thu nhập (trieu VND/thang)
+const AGE = [23,25,27,29,31,33,35,38,41,44,48,52];
+const INCOME = [9,11,10,14,16,15,20,24,27,30,38,45];
+const N = AGE.length;
+
+function mean(arr){ return arr.reduce((a,b)=>a+b,0)/arr.length; }
+function std(arr, m){ return Math.sqrt(arr.reduce((s,v)=>s+(v-m)*(v-m),0)/arr.length); }
+
+function eig2x2(a,b,d){
+  const tr = a+d, det = a*d - b*b;
+  const disc = Math.sqrt(Math.max(0, (tr*tr)/4 - det));
+  const lam1 = tr/2 + disc, lam2 = tr/2 - disc;
+  function vecFor(lam){
+    if(Math.abs(b) > 1e-12){
+      const vx = b, vy = lam - a;
+      const norm = Math.sqrt(vx*vx + vy*vy) || 1;
+      return [vx/norm, vy/norm];
+    }
+    return Math.abs(a-lam) < 1e-9 ? [1,0] : [0,1];
+  }
+  return {lam1, lam2, vec1: vecFor(lam1), vec2: vecFor(lam2)};
+}
+
+function computeStandardized(){
+  const mAge = mean(AGE), mInc = mean(INCOME);
+  const sAge = std(AGE, mAge), sInc = std(INCOME, mInc);
+  const zAge = AGE.map(v => (v-mAge)/sAge);
+  const zInc = INCOME.map(v => (v-mInc)/sInc);
+  let a=0,b=0,d=0;
+  for(let i=0;i<N;i++){ a += zAge[i]*zAge[i]; b += zAge[i]*zInc[i]; d += zInc[i]*zInc[i]; }
+  a/=N; b/=N; d/=N;
+  const eig = eig2x2(a,b,d);
+  return {zAge, zInc, eig};
+}
+
+function computeRaw(){
+  const incVnd = INCOME.map(v => v*1_000_000);
+  const mAge = mean(AGE), mInc = mean(incVnd);
+  const cAge = AGE.map(v=>v-mAge), cInc = incVnd.map(v=>v-mInc);
+  let a=0,b=0,d=0;
+  for(let i=0;i<N;i++){ a += cAge[i]*cAge[i]; b += cAge[i]*cInc[i]; d += cInc[i]*cInc[i]; }
+  a/=N; b/=N; d/=N;
+  const eig = eig2x2(a,b,d);
+  return {eig};
+}
+
+function reconError(zAge, zInc, vec){
+  let err = 0, total = 0;
+  for(let i=0;i<N;i++){
+    const proj = zAge[i]*vec[0] + zInc[i]*vec[1];
+    const rx = proj*vec[0], ry = proj*vec[1];
+    err += (zAge[i]-rx)**2 + (zInc[i]-ry)**2;
+    total += zAge[i]**2 + zInc[i]**2;
+  }
+  return {err, ratioErr: err/total, varKept: 1-err/total};
+}
+
+function pct(v){ return (v*100).toFixed(2) + '%'; }
+
+function toPx(zx, zy){
+  const size=320, margin=32, domain=2.3;
+  const scale = (size-2*margin)/(2*domain);
+  return [size/2 + zx*scale, size/2 - zy*scale];
+}
+
+function svgLine(x1,y1,x2,y2,color,width,dash){
+  return `<line x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}" stroke="${color}" stroke-width="${width}" ${dash?`stroke-dasharray="${dash}"`:''}/>`;
+}
+function svgCircle(x,y,r,color){
+  return `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${r}" fill="${color}"/>`;
+}
+
+function renderScatter(zAge, zInc, eig, keepMode){
+  const svg = document.getElementById('pcaSvg');
+  const cssVar = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+  const accent = cssVar('--accent'), accent2 = cssVar('--accent2'), warn = cssVar('--warn'), bad = cssVar('--bad'), muted = cssVar('--muted'), border = cssVar('--border');
+  let html = '';
+  const [cx, cy] = toPx(0,0);
+
+  // grid axes
+  html += svgLine(...toPx(-2.3,0), ...toPx(2.3,0), border, 1);
+  html += svgLine(...toPx(0,-2.3), ...toPx(0,2.3), border, 1);
+
+  // PC1 / PC2 lines through center
+  const ext = 2.1;
+  html += svgLine(cx-eig.vec1[0]*ext*((320-64)/(2*2.3)), cy+eig.vec1[1]*ext*((320-64)/(2*2.3)),
+                   cx+eig.vec1[0]*ext*((320-64)/(2*2.3)), cy-eig.vec1[1]*ext*((320-64)/(2*2.3)),
+                   accent, 2.2);
+  html += svgLine(cx-eig.vec2[0]*ext*((320-64)/(2*2.3)), cy+eig.vec2[1]*ext*((320-64)/(2*2.3)),
+                   cx+eig.vec2[0]*ext*((320-64)/(2*2.3)), cy-eig.vec2[1]*ext*((320-64)/(2*2.3)),
+                   warn, 1.4, '4,4');
+
+  // points + reconstruction
+  const vec = keepMode === 'pc2' ? eig.vec2 : eig.vec1;
+  for(let i=0;i<N;i++){
+    const [px,py] = toPx(zAge[i], zInc[i]);
+    if(keepMode === 'pc1' || keepMode === 'pc2'){
+      const proj = zAge[i]*vec[0] + zInc[i]*vec[1];
+      const rx = proj*vec[0], ry = proj*vec[1];
+      const [rpx, rpy] = toPx(rx, ry);
+      html += svgLine(px,py,rpx,rpy, muted, 1, '2,2');
+      html += svgCircle(rpx,rpy,3, keepMode==='pc1' ? accent2 : bad);
+    }
+    html += svgCircle(px,py,4,accent);
+  }
+  svg.innerHTML = html;
+}
+
+function runDemo(){
+  const scenario = document.querySelector('input[name="scenario"]:checked').value;
+  const loadBox = document.getElementById('loadbarBox');
+  const svgWrap = document.getElementById('svgWrap');
+  const metricRow = document.getElementById('metricRow');
+  const badge = document.getElementById('resultBadge');
+  badge.className = '';
+
+  if(scenario === 'raw'){
+    loadBox.style.display = 'block';
+    svgWrap.style.display = 'none';
+    const {eig} = computeRaw();
+    const loadAge = eig.vec1[0]*eig.vec1[0]*100;
+    const loadInc = eig.vec1[1]*eig.vec1[1]*100;
+    const ratio1 = eig.lam1/(eig.lam1+eig.lam2)*100;
+    document.getElementById('lbAge').style.width = Math.max(loadAge,0.5)+'%';
+    document.getElementById('lbAgeVal').textContent = loadAge.toFixed(6)+'%';
+    document.getElementById('lbIncome').style.width = Math.max(loadInc,0.5)+'%';
+    document.getElementById('lbIncomeVal').textContent = loadInc.toFixed(2)+'%';
+    metricRow.innerHTML = `
+      <div class="metric-box"><div class="v">${ratio1.toFixed(6)}%</div><div class="k">Explained var. PC1</div></div>
+      <div class="metric-box"><div class="v">${loadInc.toFixed(4)}%</div><div class="k">PC1 loading = Thu nhập</div></div>`;
+    badge.textContent = `❌ PC1 gần như trùng hoàn toàn với trục Thu nhập (đơn vị đồng) — không phản ánh đúng tương quan Tuổi–Thu nhập thật, đây là hệ quả của việc KHÔNG chuẩn hoá dữ liệu.`;
+    badge.className = 'ok-bad show';
+    return;
+  }
+
+  loadBox.style.display = 'none';
+  svgWrap.style.display = 'block';
+  const {zAge, zInc, eig} = computeStandardized();
+  const ratio1 = eig.lam1/(eig.lam1+eig.lam2);
+  const ratio2 = eig.lam2/(eig.lam1+eig.lam2);
+
+  if(scenario === 'pc1'){
+    renderScatter(zAge, zInc, eig, 'pc1');
+    const r = reconError(zAge, zInc, eig.vec1);
+    metricRow.innerHTML = `
+      <div class="metric-box"><div class="v">${pct(ratio1)}</div><div class="k">Variance kept (PC1)</div></div>
+      <div class="metric-box"><div class="v">${pct(r.ratioErr)}</div><div class="k">Reconstruction error</div></div>`;
+    badge.textContent = `✅ Giữ đúng PC1 (trục phương sai lớn nhất) — nén 2 chiều còn 1 chiều mà vẫn giữ ${pct(ratio1)} thông tin, đúng mục đích PCA.`;
+    badge.className = 'ok-good show';
+  } else if(scenario === 'pc2'){
+    renderScatter(zAge, zInc, eig, 'pc2');
+    const r = reconError(zAge, zInc, eig.vec2);
+    metricRow.innerHTML = `
+      <div class="metric-box"><div class="v">${pct(ratio2)}</div><div class="k">Variance kept (PC2)</div></div>
+      <div class="metric-box"><div class="v">${pct(r.ratioErr)}</div><div class="k">Reconstruction error</div></div>`;
+    badge.textContent = `❌ Giữ đúng 1 chiều nhưng CHỌN SAI TRỤC (PC2) — chỉ giữ ${pct(ratio2)} phương sai, tái tạo lại gần như hoàn toàn sai lệch so với dữ liệu gốc.`;
+    badge.className = 'ok-bad show';
+  } else if(scenario === 'both'){
+    renderScatter(zAge, zInc, eig, 'both');
+    metricRow.innerHTML = `
+      <div class="metric-box"><div class="v">100.00%</div><div class="k">Variance kept (2 trục)</div></div>
+      <div class="metric-box"><div class="v">0.00%</div><div class="k">Reconstruction error</div></div>`;
+    badge.textContent = `⚠️ Tái tạo hoàn hảo (error=0%) nhưng KHÔNG nén được gì — dữ liệu vẫn 2 chiều, mất hết lợi ích giảm chiều của PCA.`;
+    badge.className = 'ok-ok show';
+  }
+}
+
+document.querySelectorAll('input[name="scenario"]').forEach(r => {
+  r.addEventListener('change', runDemo);
+});
+
+const ANSWERS = {q1:'right', q2:'right', q3:'right'};
+function checkQuiz(){
+  let score = 0;
+  Object.keys(ANSWERS).forEach(q => {
+    const chosen = document.querySelector(`input[name="${q}"]:checked`);
+    const fb = document.getElementById('fb-' + q);
+    fb.classList.remove('correct','wrong');
+    if(!chosen){
+      fb.textContent = '⚠️ Bạn chưa chọn đáp án cho câu này.';
+      fb.classList.add('wrong','show');
+      return;
+    }
+    if(chosen.value === 'right'){
+      score++;
+      fb.textContent = '✅ Chính xác!';
+      fb.classList.add('correct','show');
+    } else {
+      fb.textContent = '❌ Chưa đúng, xem lại phần Trạng thái ở trên nhé.';
+      fb.classList.add('wrong','show');
+    }
+  });
+  const scoreBox = document.getElementById('quizScore');
+  scoreBox.textContent = `Điểm của bạn: ${score}/3`;
+  scoreBox.className = 'show';
+}
+
+runDemo();
+</script>
+</body>
+</html>

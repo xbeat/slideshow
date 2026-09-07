@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Word Embeddings: Biến Từ Ngữ Thành Vector Số — Học AI/ML dễ hiểu</title>
+<style>
+  :root{
+    --bg:#f6f7fb; --bg2:#ffffff; --text:#1c1f2b; --muted:#5b6072;
+    --accent:#5b5ff0; --accent2:#00b894; --warn:#f0a500; --bad:#e0455a;
+    --border:#e3e5ef; --card:#ffffff; --code-bg:#1c1f2b; --code-text:#e8eaf6;
+    --shadow: 0 8px 24px rgba(30,32,60,0.08);
+  }
+  [data-theme="dark"]{
+    --bg:#12131c; --bg2:#181a26; --text:#eceefb; --muted:#a2a6c2;
+    --accent:#8b8ffb; --accent2:#3ddc97; --warn:#ffc233; --bad:#ff6b7d;
+    --border:#2a2d40; --card:#1c1e2c; --code-bg:#0d0e16; --code-text:#dfe2f7;
+    --shadow: 0 8px 28px rgba(0,0,0,0.45);
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; font-family:"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+    background:var(--bg); color:var(--text); transition:background .4s ease,color .4s ease;
+    line-height:1.6;
+  }
+  .wrap{max-width:960px; margin:0 auto; padding:20px 16px 80px;}
+  header.hero{
+    text-align:center; padding:36px 20px; border-radius:20px;
+    background:linear-gradient(135deg,var(--accent),#9b8cff);
+    color:#fff; box-shadow:var(--shadow);
+    animation: fadeInDown .7s ease both;
+    position:relative;
+  }
+  header.hero h1{margin:0 0 8px; font-size:clamp(22px,4vw,34px);}
+  header.hero p{margin:0; opacity:.92; font-size:15px;}
+  .topbar{display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:14px;}
+  .badge{
+    display:inline-block; background:rgba(255,255,255,.18); padding:4px 12px;
+    border-radius:999px; font-size:12px; letter-spacing:.5px; margin-bottom:10px;
+  }
+  button.toggle{
+    background:var(--card); color:var(--text); border:1px solid var(--border);
+    padding:8px 14px; border-radius:999px; cursor:pointer; font-size:13px;
+    box-shadow:var(--shadow); transition:transform .25s ease, background .3s ease;
+  }
+  button.toggle:hover{transform:translateY(-2px);}
+  section{
+    background:var(--card); border:1px solid var(--border); border-radius:16px;
+    padding:22px 20px; margin-top:22px; box-shadow:var(--shadow);
+    animation: slideUp .6s ease both;
+  }
+  section h2{margin-top:0; font-size:20px; display:flex; align-items:center; gap:8px;}
+  section h2 .num{
+    background:var(--accent); color:#fff; width:28px; height:28px; border-radius:50%;
+    display:inline-flex; align-items:center; justify-content:center; font-size:14px; flex:none;
+  }
+  p{color:var(--text);}
+  .muted{color:var(--muted);}
+  code, pre{font-family:"Fira Code",Consolas,monospace;}
+  pre{
+    background:var(--code-bg); color:var(--code-text); padding:14px 16px; border-radius:12px;
+    overflow-x:auto; font-size:13px; line-height:1.55;
+  }
+  code.inline{background:var(--code-bg); color:var(--code-text); padding:2px 6px; border-radius:6px; font-size:.9em;}
+  table{width:100%; border-collapse:collapse; margin:12px 0; font-size:14px; overflow-x:auto; display:block;}
+  table thead, table tbody{width:100%;}
+  th,td{border:1px solid var(--border); padding:8px 10px; text-align:left; vertical-align:top;}
+  th{background:var(--bg); color:var(--muted); font-weight:600;}
+  .grade-good{color:var(--accent2); font-weight:700;}
+  .grade-ok{color:var(--warn); font-weight:700;}
+  .grade-bad{color:var(--bad); font-weight:700;}
+  .state-card{
+    border:1px dashed var(--border); border-radius:14px; padding:16px; margin:14px 0;
+    background:var(--bg); animation: slideUp .5s ease both;
+  }
+  .state-card h3{margin:0 0 6px; font-size:16px; display:flex; align-items:center; gap:8px; flex-wrap:wrap;}
+  .pill{font-size:11px; padding:3px 10px; border-radius:999px; font-weight:700;}
+  .pill.good{background:rgba(0,184,148,.15); color:var(--accent2);}
+  .pill.ok{background:rgba(240,165,0,.15); color:var(--warn);}
+  .pill.bad{background:rgba(224,69,90,.15); color:var(--bad);}
+  .ascii{
+    background:var(--code-bg); color:var(--code-text); padding:14px; border-radius:12px;
+    font-family:"Fira Code",Consolas,monospace; font-size:12.5px; white-space:pre; overflow-x:auto;
+  }
+  .grid2{display:grid; grid-template-columns:1fr; gap:14px;}
+  @media(min-width:720px){.grid2{grid-template-columns:1fr 1fr;}}
+  .metric-row{display:flex; flex-wrap:wrap; gap:10px; margin:12px 0;}
+  .metric-box{
+    flex:1; min-width:120px; padding:10px 12px; border-radius:10px; background:var(--bg2);
+    border:1px solid var(--border); text-align:center;
+  }
+  .metric-box .v{font-size:20px; font-weight:800;}
+  .metric-box .k{font-size:11.5px; color:var(--muted);}
+  .radio-row{display:flex; gap:14px; flex-wrap:wrap; margin:10px 0;}
+  .radio-row label{display:flex; align-items:center; gap:6px; font-size:13.5px; cursor:pointer;
+    padding:7px 12px; border:1px solid var(--border); border-radius:10px; background:var(--bg2);
+    transition:background .25s ease;}
+  .radio-row label:hover{background:var(--bg);}
+  .radio-row input{accent-color:var(--accent);}
+  .btn{
+    background:var(--accent); color:#fff; border:none; padding:11px 20px; border-radius:10px;
+    font-size:14px; cursor:pointer; font-weight:600; transition:transform .25s ease, box-shadow .25s ease;
+  }
+  .btn:hover{transform:translateY(-2px); box-shadow:0 6px 16px rgba(91,95,240,.35);}
+  .btn.secondary{background:var(--accent2);}
+  .pulse{animation: pulse 1s ease infinite;}
+  #resultBadge{
+    display:inline-block; margin-top:14px; padding:10px 18px; border-radius:12px; font-weight:700;
+    opacity:0;
+  }
+  #resultBadge.show{animation: slideDown .5s ease forwards;}
+  .ok-good{background:rgba(0,184,148,.15); color:var(--accent2);}
+  .ok-bad{background:rgba(224,69,90,.15); color:var(--bad);}
+  .ok-ok{background:rgba(240,165,0,.15); color:var(--warn);}
+  .quiz-q{margin-bottom:18px; padding-bottom:14px; border-bottom:1px dashed var(--border);}
+  .quiz-q:last-child{border-bottom:none;}
+  .quiz-opt{
+    display:flex; align-items:center; gap:8px; padding:8px 10px; border-radius:10px; margin:4px 0;
+    cursor:pointer; border:1px solid transparent; transition:background .25s ease;
+  }
+  .quiz-opt:hover{background:var(--bg);}
+  .quiz-opt input{accent-color:var(--accent);}
+  .feedback{
+    margin-top:8px; padding:8px 12px; border-radius:8px; font-size:13.5px; display:none;
+  }
+  .feedback.show{display:block; animation: slideDown .4s ease both;}
+  .feedback.correct{background:rgba(0,184,148,.15); color:var(--accent2);}
+  .feedback.wrong{background:rgba(224,69,90,.15); color:var(--bad);}
+  #quizScore, #warmupScore{
+    margin-top:10px; font-weight:700; opacity:0;
+  }
+  #quizScore.show, #warmupScore.show{animation: fadeInDown .5s ease forwards;}
+  .data-good, .data-bad{padding:12px 14px; border-radius:12px; font-size:13.5px;}
+  .data-good{background:rgba(0,184,148,.08); border:1px solid rgba(0,184,148,.35);}
+  .data-bad{background:rgba(224,69,90,.08); border:1px solid rgba(224,69,90,.35);}
+  .warmup-box{
+    border:1px dashed var(--border); border-radius:14px; padding:14px 16px; margin:12px 0;
+    background:var(--bg);
+  }
+  .warmup-box h4{margin:0 0 8px; font-size:14.5px;}
+  .fillblank{
+    padding:9px 12px; border-radius:10px; border:1px solid var(--border);
+    background:var(--bg2); color:var(--text); font-size:14px; width:220px; max-width:100%;
+  }
+  select.matchsel, select.wordsel{
+    padding:8px 10px; border-radius:8px; border:1px solid var(--border);
+    background:var(--bg2); color:var(--text); font-size:13.5px;
+  }
+  .match-row{display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin:6px 0;}
+  .tracewrap{overflow-x:auto;}
+  .cell-ok{color:var(--accent2); font-weight:800;}
+  .cell-bad{color:var(--bad); font-weight:800;}
+  .scatter-wrap{
+    background:var(--bg2); border:1px solid var(--border); border-radius:14px; padding:10px;
+    margin:14px 0;
+  }
+  .scatter-wrap svg{width:100%; height:auto; display:block;}
+  .picker-row{display:flex; gap:14px; flex-wrap:wrap; align-items:center; margin:10px 0;}
+  .picker-row label{font-size:13.5px; display:flex; flex-direction:column; gap:4px;}
+  footer{text-align:center; margin-top:30px; font-size:12.5px; color:var(--muted);}
+
+  @keyframes fadeInDown{
+    from{opacity:0; transform:translateY(-16px);}
+    to{opacity:1; transform:translateY(0);}
+  }
+  @keyframes slideUp{
+    from{opacity:0; transform:translateY(18px);}
+    to{opacity:1; transform:translateY(0);}
+  }
+  @keyframes slideDown{
+    from{opacity:0; transform:translateY(-8px);}
+    to{opacity:1; transform:translateY(0);}
+  }
+  @keyframes pulse{
+    0%,100%{transform:scale(1);}
+    50%{transform:scale(1.05);}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="topbar">
+    <span class="muted" style="font-size:13px;">Claude-lession · AI/ML Tiếng Việt</span>
+    <button class="toggle" onclick="toggleTheme()">🌙 / ☀️ Đổi giao diện</button>
+  </div>
+
+  <header class="hero">
+    <span class="badge">NLP — WORD EMBEDDINGS (WORD2VEC)</span>
+    <h1>🔤 Word Embeddings: Biến Từ Ngữ Thành Vector Số</h1>
+    <p>Máy tính không hiểu chữ, nó chỉ hiểu số. Vấn đề là: biến "điện thoại" và "smartphone" thành số kiểu gì để máy biết chúng <b>gần nghĩa nhau</b>, còn "điện thoại" và "chuối" thì <b>chẳng liên quan gì</b>? Bài này đi từ One-Hot ngây thơ đến Word2Vec và Contextual Embedding — có demo tính cosine similarity trực tiếp trên bản đồ vector.</p>
+  </header>
+
+  <!-- KHỞI ĐỘNG NHANH -->
+  <section>
+    <h2><span class="num">0</span> Khởi động nhanh (60 giây)</h2>
+    <p class="muted">Trả lời nhanh 3 câu dưới đây trước khi học — không cần đúng hết, chỉ để "hâm nóng" não bạn.</p>
+
+    <div class="warmup-box">
+      <h4>1️⃣ Trắc nghiệm nhanh</h4>
+      <p>Vì sao One-Hot Encoding có số chiều (dimension) cực lớn khi từ điển (vocabulary) nhiều từ?</p>
+      <label class="quiz-opt"><input type="radio" name="w1" value="wrong">Vì mỗi câu cần 1 vector riêng, không liên quan tới vocab</label>
+      <label class="quiz-opt"><input type="radio" name="w1" value="right">Vì mỗi từ trong vocab chiếm đúng 1 chiều riêng biệt — vocab 50.000 từ thì mỗi vector one-hot dài 50.000 số, gần như toàn số 0</label>
+      <label class="quiz-opt"><input type="radio" name="w1" value="wrong">Vì One-Hot luôn cố định 300 chiều bất kể vocab lớn hay nhỏ</label>
+    </div>
+
+    <div class="warmup-box">
+      <h4>2️⃣ Điền khuyết</h4>
+      <p>Thuật toán học vector từ bằng cách dự đoán các từ xung quanh (context) dựa trên 1 từ trung tâm (Skip-gram), hoặc ngược lại (CBOW), thường được gọi là <b>______</b>.</p>
+      <input class="fillblank" type="text" id="w2input" placeholder="Nhập từ khoá...">
+    </div>
+
+    <div class="warmup-box">
+      <h4>3️⃣ Đối chiếu với bản mẫu</h4>
+      <p>Ghép mỗi tình huống với loại embedding tương ứng:</p>
+      <div class="match-row">Từ "chuột" trong "chuột máy tính bị đơ" và "con chuột chạy vào bếp" cho ra <b>2 vector khác nhau</b> →
+        <select class="matchsel" id="m1">
+          <option value="">-- chọn --</option>
+          <option value="contextual">Contextual Embedding (BERT/Transformer)</option>
+          <option value="static">Word2Vec (embedding tĩnh)</option>
+        </select>
+      </div>
+      <div class="match-row">Từ "chuột" luôn có <b>đúng 1 vector cố định</b> dù xuất hiện trong câu nào →
+        <select class="matchsel" id="m2">
+          <option value="">-- chọn --</option>
+          <option value="contextual">Contextual Embedding (BERT/Transformer)</option>
+          <option value="static">Word2Vec (embedding tĩnh)</option>
+        </select>
+      </div>
+    </div>
+
+    <button class="btn" onclick="checkWarmup()">✅ Kiểm tra khởi động</button>
+    <div id="warmupScore"></div>
+  </section>
+
+  <!-- 1. ĐỊNH NGHĨA -->
+  <section>
+    <h2><span class="num">1</span> Định nghĩa ngắn gọn</h2>
+    <p><b>Word Embedding</b> là cách biểu diễn mỗi từ bằng một <b>vector số thực dày đặc</b> (dense vector, thường 50–300 chiều) trong một không gian liên tục, sao cho các từ <b>gần nghĩa nhau thì vector gần nhau</b> (đo bằng cosine similarity). Nổi tiếng nhất là <b>Word2Vec</b> (Mikolov, 2013) với 2 kiến trúc: <b>CBOW</b> (đoán từ trung tâm từ ngữ cảnh xung quanh) và <b>Skip-gram</b> (đoán ngữ cảnh xung quanh từ 1 từ trung tâm). Điều thú vị: embedding học được còn giữ <b>quan hệ đại số</b>, ví dụ kinh điển <code class="inline">vector("vua") − vector("đàn ông") + vector("đàn bà") ≈ vector("nữ hoàng")</code>.</p>
+    <div class="ascii">  KHÔNG GIAN EMBEDDING (minh hoạ 2 chiều để dễ hình dung, thực tế 100-300 chiều):
+
+        (7.6,8.3)dế         (8.5,7.6)smartphone
+              \                 /
+               \               /
+          (8.0,8.0) điện_thoại      ← 3 từ này ở GẦN NHAU: cùng cụm ngữ nghĩa "điện thoại"
+                                         (dù chữ viết hoàn toàn khác nhau!)
+
+     (0.1,3.0) chuối ─────────────────────────────  góc lệch RẤT XA cụm điện thoại
+                                                        (dù đều nằm trong không gian số dương)
+
+  cosine_similarity(u,v) = (u·v) / (‖u‖ · ‖v‖)   ← 1 = giống hệt hướng, 0 = không liên quan, -1 = ngược hướng</div>
+    <p class="muted">Ý tưởng nền tảng gọi là <b>Distributional Hypothesis</b>: "một từ được định nghĩa bởi những từ xung quanh nó" (Firth, 1957) — "điện thoại" và "smartphone" hay xuất hiện cạnh những từ giống nhau ("mua", "sạc", "màn hình"...) nên embedding học ra vector gần nhau, dù bản thân 2 chữ không có ký tự nào trùng nhau.</p>
+  </section>
+
+  <!-- 2. BÀI TOÁN THỰC TẾ -->
+  <section>
+    <h2><span class="num">2</span> Bài toán thực tế: Ô tìm kiếm sàn thương mại điện tử 🛒</h2>
+    <p>Một sàn TMĐT có ô tìm kiếm. Khách gõ <b>"mua dế cũ giá rẻ"</b> ("dế" là tiếng lóng miền Nam chỉ điện thoại), nhưng toàn bộ sản phẩm trong kho lại được người bán mô tả bằng từ <b>"điện thoại"</b> hoặc <b>"smartphone"</b>. Nếu hệ thống tìm kiếm chỉ so khớp <b>chữ viết y hệt</b>, khách sẽ nhận được <b>0 kết quả</b> dù kho hàng có hàng ngàn điện thoại cũ giá rẻ đang chờ bán.</p>
+    <table>
+      <thead><tr><th>Câu khách gõ</th><th>Mô tả sản phẩm trong kho</th><th>Có nên match không?</th></tr></thead>
+      <tbody>
+        <tr><td>"mua dế cũ giá rẻ"</td><td>"điện thoại cũ, còn bảo hành"</td><td>✅ Nên match — cùng nghĩa</td></tr>
+        <tr><td>"mua dế cũ giá rẻ"</td><td>"smartphone secondhand giá tốt"</td><td>✅ Nên match — cùng nghĩa</td></tr>
+        <tr><td>"mua dế cũ giá rẻ"</td><td>"chuối chín cây loại 1"</td><td>❌ Không nên match — khác chủ đề</td></tr>
+      </tbody>
+    </table>
+    <p class="muted">4 trạng thái tiếp theo dùng đúng bài toán này để so sánh các cách biểu diễn từ, từ ngây thơ đến hiện đại.</p>
+  </section>
+
+  <!-- 3. 4 TRẠNG THÁI -->
+  <section>
+    <h2><span class="num">3</span> 4 trạng thái biểu diễn văn bản thành số</h2>
+    <p class="muted">Cùng bài toán tìm kiếm ở trên, chỉ đổi cách biến từ ngữ thành vector:</p>
+
+    <!-- State 1 -->
+    <div class="state-card">
+      <h3>❌ Trạng thái 1 — One-Hot Encoding <span class="pill bad">❌ Xấu</span></h3>
+      <div class="ascii">  Vocab (5 từ): [điện_thoại, smartphone, dế, chuối, táo]
+
+  điện_thoại  = [1,0,0,0,0]
+  smartphone  = [0,1,0,0,0]
+  dế          = [0,0,1,0,0]
+  chuối       = [0,0,0,1,0]
+
+  cosine(điện_thoại, smartphone) = 0.000   ← toán học nói "chẳng liên quan gì"... nhưng SAI, đây là đồng nghĩa!
+  cosine(điện_thoại, chuối)      = 0.000   ← giống hệt con số ở trên, dù chuối thật sự chẳng liên quan</div>
+      <pre>from sklearn.preprocessing import OneHotEncoder
+words = [["dien_thoai"],["smartphone"],["de"],["chuoi"]]
+enc = OneHotEncoder(sparse_output=False).fit(words)
+print(enc.transform([["dien_thoai"],["smartphone"]]))
+# -> 2 vector TRỰC GIAO (orthogonal), cosine similarity luôn = 0 dù 2 từ đồng nghĩa</pre>
+      <p class="muted">Mọi vector one-hot đều <b>vuông góc</b> với nhau theo định nghĩa — không có khái niệm "gần" hay "xa" về nghĩa, chỉ có "giống hệt" (chính nó) hoặc "trực giao" (mọi từ khác). Tìm kiếm "dế" sẽ không bao giờ ra "điện thoại".</p>
+    </div>
+
+    <!-- State 2 -->
+    <div class="state-card">
+      <h3>⚠️ Trạng thái 2 — Bag-of-Words / TF-IDF <span class="pill ok">⚠️ Trung bình</span></h3>
+      <div class="ascii">  doc1 = "mua điện thoại thông minh giá rẻ"
+  doc2 = "bán smartphone giá tốt"
+  doc3 = "mua nải chuối chín cây"
+
+  TF-IDF(doc1, doc2): chỉ trùng đúng 1 từ "giá" → cosine ≈ 0.15   ⚠️ THẤP dù cùng chủ đề điện thoại
+  TF-IDF(doc1, doc3): không trùng từ nào       → cosine = 0.000   ✓ đúng là khác chủ đề (may mắn thôi)</div>
+      <pre>from sklearn.feature_extraction.text import TfidfVectorizer
+docs = ["mua dien thoai thong minh gia re",
+        "ban smartphone gia tot",
+        "mua nai chuoi chin cay"]
+X = TfidfVectorizer().fit_transform(docs)
+# cosine(doc1, doc2) thấp vì "dien_thoai" và "smartphone" là 2 CỘT KHÁC NHAU trong ma trận
+# -> TF-IDF chỉ đếm từ TRÙNG Y HỆT, không hiểu "smartphone" là "điện thoại"</pre>
+      <p class="muted">Khá hơn One-Hot vì bắt được từ khoá trùng lặp trong câu dài, nhưng vẫn <b>không hiểu đồng nghĩa</b> — may mắn cho kết quả đúng ở doc3 (vì tình cờ không trùng từ), nhưng lại cho điểm thấp sai ở doc2 (vì "điện thoại" ≠ "smartphone" theo mặt chữ).</p>
+    </div>
+
+    <!-- State 3 -->
+    <div class="state-card">
+      <h3>✅ Trạng thái 3 — Word2Vec (embedding tĩnh) <span class="pill good">✅ Tốt</span></h3>
+      <div class="ascii">  Vector học được sau khi train trên corpus lớn (rút gọn về 2 chiều để minh hoạ):
+  điện_thoại = (8.0, 8.0)     smartphone = (8.5, 7.6)     dế = (7.6, 8.3)     chuối = (0.1, 3.0)
+
+  cosine(điện_thoại, smartphone) ≈ 0.998   ✅ RẤT gần nhau — dù chữ viết hoàn toàn khác nhau!
+  cosine(điện_thoại, dế)         ≈ 0.999   ✅ "dế" (tiếng lóng) được nhận đúng là điện thoại
+  cosine(điện_thoại, chuối)      ≈ 0.719   ✅ góc lệch lớn hơn nhiều → thấp hẳn, đúng là khác chủ đề
+
+  => Tìm "mua dế cũ" VẪN match được sản phẩm mô tả "điện thoại cũ" — giải quyết đúng bài toán ở Mục 2!</div>
+      <pre>from gensim.models import Word2Vec
+sentences = [["mua","dien_thoai","thong_minh"], ["ban","smartphone","gia_tot"],
+             ["dien_thoai","cu","gia_re"], ["de","cu","con","bao_hanh"], ...]
+model = Word2Vec(sentences, vector_size=100, window=5, sg=1)  # sg=1: Skip-gram
+model.wv.most_similar("dien_thoai")
+# -> [('smartphone', 0.91), ('de', 0.88), ('iphone', 0.85), ...]  # KHÔNG hề dạy máy "de = dien_thoai"
+# mà máy TỰ HỌC từ việc 2 từ này hay xuất hiện trong ngữ cảnh giống nhau</pre>
+      <p class="muted">Word2Vec <b>tự học</b> quan hệ ngữ nghĩa từ dữ liệu, không cần ai dạy từ điển đồng nghĩa thủ công. Giới hạn: mỗi từ chỉ có <b>đúng 1 vector cố định</b> — "chuột" (con vật) và "chuột" (máy tính) bị gộp chung 1 vector.</p>
+    </div>
+
+    <!-- State 4 -->
+    <div class="state-card">
+      <h3>✅ Trạng thái 4 — Contextual Embedding (BERT/Transformer) <span class="pill good">✅ Tốt (nâng cao)</span></h3>
+      <div class="ascii">  Từ "chuột" xuất hiện trong 2 câu khác nhau:
+   Câu A: "Con chuột chạy vào bếp"        → embedding_A(chuột) ≈ gần [động vật, mèo, chạy, gặm nhấm]
+   Câu B: "Chuột máy tính của tôi bị đơ"  → embedding_B(chuột) ≈ gần [bàn phím, click, USB, laptop]
+
+  cosine(embedding_A(chuột), embedding_B(chuột)) ≈ 0.35   ← THẤP dù cùng 1 chữ "chuột"!
+  (Word2Vec ở Trạng thái 3 sẽ luôn cho CÙNG 1 vector cho "chuột" — không phân biệt được 2 nghĩa này)</div>
+      <pre>from transformers import AutoTokenizer, AutoModel
+import torch
+tok = AutoTokenizer.from_pretrained("bert-base-multilingual-cased")
+model = AutoModel.from_pretrained("bert-base-multilingual-cased")
+
+def embed(sentence, target_idx):
+    out = model(**tok(sentence, return_tensors="pt"))
+    return out.last_hidden_state[0, target_idx]  # vector THAY ĐỔI theo cả câu xung quanh
+
+vecA = embed("Con chuột chạy vào bếp", target_idx=2)
+vecB = embed("Chuột máy tính của tôi bị đơ", target_idx=1)
+# vecA và vecB khác nhau đáng kể dù cùng từ "chuột" -> giải quyết đa nghĩa (polysemy)</pre>
+      <p class="muted">Đánh đổi: Contextual Embedding cần chạy cả câu qua mạng Transformer mỗi lần (tốn tính toán hơn nhiều so với tra bảng vector có sẵn của Word2Vec), nhưng bù lại giải quyết đúng vấn đề <b>từ đa nghĩa</b> mà embedding tĩnh không làm được.</p>
+    </div>
+  </section>
+
+  <!-- BẢNG SO SÁNH -->
+  <section>
+    <h2><span class="num">4</span> Bảng so sánh tổng hợp</h2>
+    <table>
+      <thead><tr><th>Trạng Thái</th><th>Input</th><th>Xử Lý</th><th>Output</th><th>Đánh Giá</th></tr></thead>
+      <tbody>
+        <tr><td>One-Hot Encoding</td><td>1 từ trong vocab</td><td>Đánh dấu 1 vị trí = 1, còn lại = 0</td><td>Vector rất thưa, chiều = |vocab|</td><td class="grade-bad">❌ Cosine luôn 0 giữa 2 từ khác nhau</td></tr>
+        <tr><td>Bag-of-Words / TF-IDF</td><td>Cả câu/đoạn văn</td><td>Đếm tần suất từ + trọng số IDF</td><td>Vector thưa theo tần suất</td><td class="grade-ok">⚠️ Bắt từ khoá trùng, không hiểu đồng nghĩa</td></tr>
+        <tr><td>Word2Vec (Skip-gram/CBOW)</td><td>Corpus lớn, cửa sổ ngữ cảnh</td><td>Mạng nơ-ron nông học vector từ ngữ cảnh</td><td>Vector dense ~100-300 chiều, tĩnh theo từ</td><td class="grade-good">✅ Bắt ngữ nghĩa & loại suy (vua−đàn ông+đàn bà≈nữ hoàng)</td></tr>
+        <tr><td>Contextual Embedding (BERT)</td><td>Cả câu + vị trí từ</td><td>Transformer self-attention theo ngữ cảnh</td><td>Vector dense, đổi theo từng câu</td><td class="grade-good">✅ Giải quyết đa nghĩa, nhưng nặng tính toán hơn</td></tr>
+      </tbody>
+    </table>
+    <p class="muted">💡 <b>Bài học:</b> Càng về sau, mô hình càng hiểu <b>ngữ nghĩa</b> tốt hơn nhưng cũng càng <b>tốn tài nguyên</b> hơn. Với bài toán tìm kiếm sản phẩm đơn giản, Word2Vec (hoặc embedding có sẵn như fastText) thường đã đủ tốt và rẻ; chỉ cần lên Contextual Embedding khi bài toán thực sự cần phân biệt <b>từ đa nghĩa theo ngữ cảnh</b> (chatbot, tóm tắt văn bản, hỏi-đáp...).</p>
+  </section>
+
+  <!-- DEMO TƯƠNG TÁC -->
+  <section>
+    <h2><span class="num">5</span> Demo: Chọn 2 từ, xem vector "gần" hay "xa" nhau trên bản đồ</h2>
+    <p class="muted">Toạ độ dưới đây là ví dụ minh hoạ (rút gọn về 2 chiều) mô phỏng vector Word2Vec đã học từ corpus sản phẩm TMĐT. Chọn 2 từ để so sánh <b>One-Hot similarity</b> (chỉ 0 hoặc 1) với <b>Word2Vec cosine similarity</b> (đo thật bằng công thức, tính trực tiếp trong trình duyệt).</p>
+
+    <div class="picker-row">
+      <label>Từ A:
+        <select class="wordsel" id="wordA"></select>
+      </label>
+      <label>Từ B:
+        <select class="wordsel" id="wordB"></select>
+      </label>
+      <button class="btn" onclick="runDemo()" style="align-self:flex-end;">🔎 Tính độ tương đồng</button>
+    </div>
+
+    <div class="scatter-wrap">
+      <svg id="scatterSvg" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet"></svg>
+    </div>
+
+    <div class="metric-row" id="metricRow"></div>
+    <div id="resultBadge"></div>
+  </section>
+
+  <!-- DỮ LIỆU TỐT vs XẤU -->
+  <section>
+    <h2><span class="num">6</span> Dữ liệu tốt vs dữ liệu xấu</h2>
+    <div class="grid2">
+      <div class="data-good">
+        <b>✅ Dữ liệu tốt</b>
+        <ul>
+          <li>Corpus <b>lớn và đa dạng chủ đề</b> — càng nhiều ngữ cảnh khác nhau, embedding càng học được đúng quan hệ ngữ nghĩa thay vì trùng hợp ngẫu nhiên</li>
+          <li><b>Tách từ (word segmentation) đúng</b> cho tiếng Việt — "điện thoại" phải được nhận là 1 từ ghép, không tách rời thành "điện" + "thoại" (2 từ này riêng lẻ mang nghĩa hoàn toàn khác)</li>
+          <li>Làm sạch nhiễu trước khi train: bỏ HTML tag, ký tự lạ, chuẩn hoá chữ hoa/thường và dấu tiếng Việt nhất quán</li>
+          <li>Mỗi từ xuất hiện <b>đủ số lần</b> trong corpus (thường ≥ 5 lần) — từ quá hiếm sẽ có vector không đáng tin cậy</li>
+        </ul>
+      </div>
+      <div class="data-bad">
+        <b>❌ Dữ liệu xấu</b>
+        <ul>
+          <li>Corpus <b>quá nhỏ hoặc chỉ 1 chủ đề hẹp</b> — dễ khiến 2 từ không liên quan bị gần nhau chỉ vì tình cờ đứng cạnh nhau vài lần</li>
+          <li><b>Tách từ không nhất quán</b> — cùng 1 từ ghép lúc viết liền, lúc viết rời khiến vocab bị nhân đôi ("dienthoai" và "điện thoại" thành 2 mục riêng)</li>
+          <li>Trộn lẫn nhiều ngôn ngữ mà không xử lý riêng, làm loãng ngữ cảnh học được cho mỗi ngôn ngữ</li>
+          <li>Corpus mang <b>thiên kiến xã hội</b> (ví dụ luôn gắn nghề nghiệp với 1 giới tính) — embedding sẽ học luôn thiên kiến đó và lan sang mọi ứng dụng downstream</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- BÀI TẬP + QUIZ -->
+  <section>
+    <h2><span class="num">7</span> Bài tập nhỏ</h2>
+    <p>Giả sử bạn train Word2Vec trên corpus review sản phẩm và nhận thấy <code class="inline">cosine("ship", "giao_hàng") ≈ 0.93</code> nhưng <code class="inline">cosine("ship", "con_tàu") ≈ 0.10</code> (dù "ship" tiếng Anh nghĩa gốc là "con tàu"). Hãy giải thích tại sao Word2Vec lại học ra kết quả này — gợi ý: nhớ lại <b>Distributional Hypothesis</b> ở Mục 1 và nghĩ về ngữ cảnh thực tế mà từ "ship" xuất hiện trong review TMĐT tiếng Việt.</p>
+
+    <h2 style="margin-top:26px;"><span class="num">?</span> Quiz tự kiểm tra</h2>
+
+    <div class="quiz-q">
+      <p><b>Câu 1.</b> Vì sao One-Hot Encoding không thể hiện được sự tương đồng ngữ nghĩa giữa 2 từ đồng nghĩa?</p>
+      <label class="quiz-opt"><input type="radio" name="q1" value="wrong">Vì One-Hot chỉ dùng được cho tiếng Anh, không dùng được cho tiếng Việt</label>
+      <label class="quiz-opt"><input type="radio" name="q1" value="right">Vì mọi vector One-Hot đều trực giao (orthogonal) với nhau theo định nghĩa, nên cosine similarity luôn bằng 0 bất kể 2 từ có liên quan về nghĩa hay không</label>
+      <label class="quiz-opt"><input type="radio" name="q1" value="wrong">Vì One-Hot chỉ hoạt động đúng khi vocab nhỏ hơn 10 từ</label>
+      <div class="feedback" id="fb-q1"></div>
+    </div>
+
+    <div class="quiz-q">
+      <p><b>Câu 2.</b> Khác biệt cốt lõi giữa Word2Vec (embedding tĩnh) và Contextual Embedding (BERT) là gì?</p>
+      <label class="quiz-opt"><input type="radio" name="q2" value="wrong">Word2Vec chỉ dùng được cho từ tiếng Anh, BERT dùng được cho mọi ngôn ngữ</label>
+      <label class="quiz-opt"><input type="radio" name="q2" value="right">Word2Vec luôn cho ra đúng 1 vector cố định cho mỗi từ dù xuất hiện trong câu nào, còn BERT sinh ra vector khác nhau cho cùng 1 từ tuỳ theo ngữ cảnh câu xung quanh</label>
+      <label class="quiz-opt"><input type="radio" name="q2" value="wrong">BERT không cần dữ liệu để huấn luyện, Word2Vec thì cần</label>
+      <div class="feedback" id="fb-q2"></div>
+    </div>
+
+    <div class="quiz-q">
+      <p><b>Câu 3.</b> Trong demo ở Mục 5, vì sao "điện thoại" và "dế" có cosine similarity cao dù 2 từ khác nhau hoàn toàn về mặt chữ viết?</p>
+      <label class="quiz-opt"><input type="radio" name="q3" value="wrong">Vì hệ thống so khớp trực tiếp chuỗi ký tự và tìm thấy phần trùng nhau</label>
+      <label class="quiz-opt"><input type="radio" name="q3" value="right">Vì Word2Vec học vector dựa trên ngữ cảnh xung quanh trong corpus lớn — 2 từ hay xuất hiện trong ngữ cảnh tương tự (đồng nghĩa) sẽ có vector nằm gần nhau trong không gian nhiều chiều</label>
+      <label class="quiz-opt"><input type="radio" name="q3" value="wrong">Vì cả 2 từ đều bắt đầu bằng phụ âm "đ" hoặc "d"</label>
+      <div class="feedback" id="fb-q3"></div>
+    </div>
+
+    <button class="btn" onclick="checkQuiz()">✅ Chấm điểm</button>
+    <div id="quizScore"></div>
+  </section>
+
+  <footer>
+    Claude-lession · Bài giảng AI/ML tiếng Việt tự động · Chủ đề tham khảo từ khóa học <i>AI For Beginners</i>.
+  </footer>
+</div>
+
+<script>
+function toggleTheme(){
+  const root = document.documentElement;
+  const cur = root.getAttribute('data-theme');
+  root.setAttribute('data-theme', cur === 'dark' ? 'light' : 'dark');
+  try{ localStorage.setItem('lesson-theme', root.getAttribute('data-theme')); }catch(e){}
+}
+(function initTheme(){
+  try{
+    const saved = localStorage.getItem('lesson-theme');
+    if(saved){ document.documentElement.setAttribute('data-theme', saved); }
+    else if(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches){
+      document.documentElement.setAttribute('data-theme','dark');
+    }
+  }catch(e){}
+})();
+
+function checkWarmup(){
+  let score = 0, total = 4;
+  const box = document.getElementById('warmupScore');
+
+  const w1 = document.querySelector('input[name="w1"]:checked');
+  if(w1 && w1.value === 'right') score++;
+
+  const w2 = (document.getElementById('w2input').value || '').trim().toLowerCase();
+  if(w2.includes('word2vec') || w2.includes('word 2 vec')) score++;
+
+  const m1 = document.getElementById('m1').value;
+  const m2 = document.getElementById('m2').value;
+  if(m1 === 'contextual') score++;
+  if(m2 === 'static') score++;
+
+  box.textContent = `Khởi động xong: ${score}/${total} đúng — ` +
+    (score >= 3 ? '🔥 Trực giác tốt, vào bài chính thôi!' : '👍 Chưa sao, đọc kỹ Trạng thái 1-4 bên dưới nhé.');
+  box.className = 'show';
+}
+
+// Toạ độ minh hoạ (2D, mô phỏng embedding Word2Vec đã học từ corpus TMĐT)
+const WORDS = {
+  'điện thoại': {x:8.0, y:8.0, group:'phone'},
+  'smartphone': {x:8.5, y:7.6, group:'phone'},
+  'dế':         {x:7.6, y:8.3, group:'phone'},
+  'iphone':     {x:8.8, y:8.9, group:'phone'},
+  'samsung':    {x:8.3, y:8.6, group:'phone'},
+  'laptop':     {x:6.0, y:2.0, group:'computer'},
+  'máy tính':   {x:6.4, y:1.7, group:'computer'},
+  'tủ lạnh':    {x:2.75, y:5.89, group:'appliance'},
+  'chuối':      {x:0.05, y:3.0, group:'fruit'},
+  'táo':        {x:0.18, y:2.59, group:'fruit'},
+  'cam':        {x:0.08, y:2.20, group:'fruit'}
+};
+const GROUP_COLOR = {
+  phone:'#5b5ff0', computer:'#00b894', appliance:'#f0a500', fruit:'#e0455a'
+};
+const GROUP_LABEL = {
+  phone:'nhóm điện thoại', computer:'nhóm máy tính', appliance:'nhóm đồ gia dụng', fruit:'nhóm trái cây'
+};
+// độ lệch nhãn thủ công để tránh chữ đè lên nhau trong các cụm điểm sát nhau
+const LABEL_OFFSET = {
+  'điện thoại': {dx:0,  dy:6},
+  'smartphone': {dx:9,  dy:0.5},
+  'dế':         {dx:-4, dy:-3.5},
+  'iphone':     {dx:0,  dy:-4},
+  'samsung':    {dx:6,  dy:-3.5},
+  'chuối':      {dx:-4, dy:-2},
+  'táo':        {dx:8,  dy:0.5},
+  'cam':        {dx:-3, dy:4.5}
+};
+
+function cosine(a,b){
+  const dot = a.x*b.x + a.y*b.y;
+  const magA = Math.hypot(a.x, a.y);
+  const magB = Math.hypot(b.x, b.y);
+  return dot / (magA*magB);
+}
+
+function populateSelects(){
+  const selA = document.getElementById('wordA');
+  const selB = document.getElementById('wordB');
+  const keys = Object.keys(WORDS);
+  keys.forEach(k => {
+    selA.appendChild(new Option(k, k));
+    selB.appendChild(new Option(k, k));
+  });
+  selA.value = 'dế';
+  selB.value = 'điện thoại';
+  selA.addEventListener('change', runDemo);
+  selB.addEventListener('change', runDemo);
+}
+
+function toSvgCoord(x, y){
+  // scale: data range 0..10 -> svg 8..92, và lật trục y (svg y tăng xuống dưới)
+  return { sx: 8 + x*8.4, sy: 92 - y*8.4 };
+}
+
+function drawScatter(keyA, keyB){
+  const svg = document.getElementById('scatterSvg');
+  let html = '';
+  // các đường lưới mờ
+  html += `<rect x="0" y="0" width="100" height="100" fill="none"/>`;
+
+  // đường nối 2 từ được chọn (vẽ trước để nằm dưới các điểm)
+  const a = WORDS[keyA], b = WORDS[keyB];
+  const pa = toSvgCoord(a.x, a.y), pb = toSvgCoord(b.x, b.y);
+  html += `<line x1="${pa.sx}" y1="${pa.sy}" x2="${pb.sx}" y2="${pb.sy}" stroke="var(--accent)" stroke-width="1.2" stroke-dasharray="2,2"/>`;
+
+  Object.entries(WORDS).forEach(([name, w])=>{
+    const p = toSvgCoord(w.x, w.y);
+    const selected = (name === keyA || name === keyB);
+    const r = selected ? 3.2 : 2.2;
+    const color = GROUP_COLOR[w.group];
+    html += `<circle cx="${p.sx}" cy="${p.sy}" r="${r}" fill="${color}" opacity="${selected?1:0.55}" stroke="${selected?'var(--text)':'none'}" stroke-width="0.6"/>`;
+    const off = LABEL_OFFSET[name] || {dx:0, dy:-3.2};
+    html += `<text x="${p.sx + off.dx}" y="${p.sy + off.dy}" font-size="${selected?3.6:2.8}" fill="var(--text)" text-anchor="middle" font-weight="${selected?'700':'400'}">${name}</text>`;
+  });
+
+  svg.innerHTML = html;
+}
+
+function runDemo(){
+  const keyA = document.getElementById('wordA').value;
+  const keyB = document.getElementById('wordB').value;
+  const a = WORDS[keyA], b = WORDS[keyB];
+
+  drawScatter(keyA, keyB);
+
+  const oneHotSim = (keyA === keyB) ? 1 : 0;
+  const w2vSim = cosine(a, b);
+  const sameGroup = a.group === b.group;
+
+  const metricRow = document.getElementById('metricRow');
+  metricRow.innerHTML = `
+    <div class="metric-box"><div class="v">${oneHotSim.toFixed(3)}</div><div class="k">One-Hot similarity</div></div>
+    <div class="metric-box"><div class="v">${w2vSim.toFixed(3)}</div><div class="k">Word2Vec cosine similarity</div></div>
+    <div class="metric-box"><div class="v">${sameGroup ? 'Cùng nhóm' : 'Khác nhóm'}</div><div class="k">${GROUP_LABEL[a.group]} vs ${GROUP_LABEL[b.group]}</div></div>`;
+
+  const badge = document.getElementById('resultBadge');
+  badge.className = '';
+  let verdict, cls;
+  if(keyA === keyB){
+    verdict = '🔁 Cùng 1 từ — mọi cách biểu diễn đều cho similarity cao nhất';
+    cls = 'ok-good';
+  } else if(sameGroup && w2vSim > 0.9){
+    verdict = `✅ Word2Vec phát hiện đúng đây là 2 từ đồng nghĩa/liên quan (One-Hot lại cho ra ${oneHotSim.toFixed(0)} — "không liên quan gì" — SAI!)`;
+    cls = 'ok-good';
+  } else if(!sameGroup){
+    verdict = `⚠️ 2 từ khác chủ đề — Word2Vec cho similarity thấp hơn hẳn (${w2vSim.toFixed(3)}), đúng như kỳ vọng`;
+    cls = 'ok-ok';
+  } else {
+    verdict = `Word2Vec similarity = ${w2vSim.toFixed(3)}`;
+    cls = 'ok-ok';
+  }
+  badge.textContent = `"${keyA}" vs "${keyB}": ${verdict}`;
+  badge.classList.add(cls);
+  requestAnimationFrame(()=> badge.classList.add('show'));
+}
+
+populateSelects();
+runDemo();
+
+const ANSWERS = { q1:'right', q2:'right', q3:'right' };
+function checkQuiz(){
+  let score = 0;
+  const total = Object.keys(ANSWERS).length;
+  for(const q in ANSWERS){
+    const checked = document.querySelector(`input[name="${q}"]:checked`);
+    const fb = document.getElementById('fb-'+q);
+    if(checked && checked.value === ANSWERS[q]){
+      score++;
+      fb.textContent = '✅ Chính xác!';
+      fb.className = 'feedback show correct';
+    } else {
+      fb.textContent = checked ? '❌ Chưa đúng — đọc lại phần Trạng thái ở trên nhé.' : '⚠️ Bạn chưa chọn đáp án.';
+      fb.className = 'feedback show wrong';
+    }
+  }
+  const box = document.getElementById('quizScore');
+  box.textContent = `Kết quả: ${score}/${total} câu đúng — ` +
+    (score === total ? '🏆 Xuất sắc!' : score >= total/2 ? '👍 Khá tốt, xem lại câu sai nhé.' : '📖 Nên đọc lại bài trước khi làm tiếp.');
+  box.className = 'show';
+}
+</script>
+</body>
+</html>
